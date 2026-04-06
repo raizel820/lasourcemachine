@@ -1,0 +1,164 @@
+---
+Task ID: 2-a
+Agent: foundation-utils
+Task: Create i18n translations, store, currency utils, types, helpers, constants
+
+Work Log:
+- Created src/lib/i18n.ts with comprehensive en/fr/ar translations covering: nav, hero, machines, services, projects, news, faq, about, contact, footer, cta, stats, admin, common
+- Created src/lib/types.ts with TypeScript interfaces for all database models: Machine, Category, ProductionLine, NewsPost, Project, Service, Partner, FAQ, Lead, SiteSetting, Media
+- Created src/lib/store.ts with Zustand persist middleware for locale/currency state with RTL support and document direction management
+- Created src/lib/currency.ts with DZD/USD/EUR exchange rates, formatPrice with locale-aware formatting, convertPrice, and currency symbol/name helpers
+- Created src/lib/helpers.ts with getLocalizedValue, getLocalizedArray, generateSlug, formatDate, truncateText, cn re-export, and Google Maps URL builders
+- Created src/lib/constants.ts with company info, locale settings, currency settings, admin routes, pagination defaults, file upload limits, and SEO defaults
+
+Stage Summary:
+- All 6 foundation utility files created and lint-clean
+- i18n covers all UI strings in 3 languages with real Arabic and French text
+- Zustand store persists locale/currency in localStorage, manages RTL direction on <html>
+- Type system covers all database models, filters, pagination, and form data
+- Currency utils support DZD (base), USD, EUR with locale-appropriate formatting
+- Helpers handle JSON translatable fields with fallback chain (requested → fr → en → ar)
+
+---
+## Task ID: 3
+Agent: layout-components
+Task: Create global layout components (Navbar, Footer, WhatsApp, etc.)
+
+Work Log:
+- Created src/components/shared/ThemeToggle.tsx – Sun/Moon toggle using next-themes useTheme, hydration-safe with useSyncExternalStore
+- Created src/components/shared/LanguageSwitcher.tsx – Dropdown with flag emojis, uses Zustand store to set locale (EN/FR/AR)
+- Created src/components/shared/CurrencySwitcher.tsx – Dropdown showing currency symbols, uses Zustand store to set currency (DZD/USD/EUR)
+- Created src/components/shared/SectionHeader.tsx – Reusable section header with title, subtitle, blue underline accent, centered/left-aligned options
+- Created src/components/shared/WhatsAppButton.tsx – Fixed floating button with pulse animation, links to company WhatsApp with pre-filled message, supports RTL positioning
+- Created src/components/shared/RequestQuoteModal.tsx – Dialog form with Name/Email/Phone/Company/Message fields, POSTs to /api/contact, machine name pre-fill, sonner toast notifications
+- Created src/components/layout/Navbar.tsx – Responsive navbar with: company logo/name, desktop nav links with "More" dropdown, language/currency/theme switchers, CTA button, top contact bar, sticky with backdrop blur, mobile Sheet menu with RTL support
+- Created src/components/layout/Footer.tsx – 4-column footer: company info + social links, quick links, contact info, follow section; bottom copyright bar with year
+- Wired all components into src/app/page.tsx with hero section, sample machine cards, and quote modal demo
+- All lint errors resolved (useSyncExternalStore for hydration, Sheet key for route-change closing)
+
+Stage Summary:
+- All 8 global layout/shared components created and lint-clean
+- Responsive design with mobile-first approach (Sheet for mobile nav, stacked footer columns)
+- Full RTL support for Arabic locale (document direction, positioning, icon rotation)
+- Lead capture modal integrated with form validation and API submission
+- Navigation supports all 9 public routes with active link indicators
+- Dev server compiles successfully with no errors
+
+---
+## Task ID: 10 - seed-data-creator
+### Work Task
+Create a comprehensive database seed file for the LA SOURCE MACHIEN Algerian industrial machinery company website, populating all models with realistic trilingual (EN/FR/AR) sample data.
+
+### Work Summary
+- Created `/home/z/my-project/prisma/seed.ts` with complete sample data for all 12 database models
+- **Data seeded successfully** (verified with two consecutive runs for idempotency):
+  - 1 Admin User (admin/admin123)
+  - 5 Categories (CNC Machines, Press Machines, Lathes & Turning, Welding Equipment, Cutting & Shearing)
+  - 12 Machines with full specs, descriptions (3 languages), images, prices in DZD, and 5 featured
+  - 3 Production Lines with MachineProductionLine junction records linking machines
+  - 4 News Posts with multi-paragraph content, excerpts, and published dates
+  - 4 Projects with client info, location, and detailed content
+  - 5 Services with Lucide icons and feature arrays (status: draft)
+  - 6 Partners with logos and websites
+  - 8 FAQs covering ordering, delivery, warranty, payment, installation, support, returns, spare parts
+  - 10 Site Settings including company info, contact details, social links, working hours, and SEO meta
+- All translatable fields stored as JSON strings with {en, fr, ar} keys
+- Used `upsert` for models with unique fields (slug-based), `deleteMany + create` for models without unique fields (Service, Partner, FAQ)
+- Lint passes cleanly with no errors
+
+---
+## Task ID: 8 - api-routes
+### Work Task
+Create all 18 API routes for the industrial machinery website covering machines, categories, production lines, news, projects, services, partners, FAQs, contact/leads, settings, upload, and auth.
+
+### Work Summary
+Created all 18 API route files using Next.js App Router route handlers:
+
+**Public Routes:**
+1. `GET /api/machines` - List machines with filters (category, type, search, featured, status), pagination, category relation
+2. `GET /api/machines/[slug]` - Get single published machine with category and production lines
+3. `GET /api/categories` - List all categories with machine counts
+4. `GET /api/production-lines` - List published production lines with machines via junction table
+5. `GET /api/production-lines/[slug]` - Get single published production line with machines
+6. `GET /api/news` - List published news posts ordered by publishedAt desc
+7. `GET /api/news/[slug]` - Get single published news post
+8. `GET /api/projects` - List published projects
+9. `GET /api/projects/[slug]` - Get single published project
+10. `GET /api/services` - List all services
+11. `GET /api/services/[id]` - Get single service by ID
+12. `GET /api/partners` - List partners
+13. `GET /api/faqs` - List FAQs
+14. `POST /api/contact` - Submit contact form, creates Lead record
+
+**Admin Routes (Bearer token auth):**
+- `POST /api/machines`, `PUT /api/machines/[slug]`, `DELETE /api/machines/[slug]`
+- `POST /api/production-lines`, `PUT /api/production-lines/[slug]`, `DELETE /api/production-lines/[slug]`
+- `POST /api/news`, `PUT /api/news/[slug]`, `DELETE /api/news/[slug]`
+- `POST /api/projects`, `PUT /api/projects/[slug]`, `DELETE /api/projects/[slug]`
+- `POST /api/services`, `PUT /api/services/[id]`, `DELETE /api/services/[id]`
+- `POST /api/partners`
+- `GET /api/settings`, `PUT /api/settings`
+- `GET /api/leads` (with pagination/status filter), `PUT /api/leads` (update status)
+- `POST /api/upload` (placeholder returning file URL)
+- `POST /api/auth` (admin login against AdminUser table)
+
+**Key patterns:**
+- Admin auth: `Authorization: Bearer admin-token` header check
+- All routes use `import { db } from '@/lib/db'`
+- Next.js 15 async params pattern: `{ params }: { params: Promise<{...}> }`
+- Pagination: page/limit query params with total/pageTotal in response
+- Proper error handling with try/catch and appropriate HTTP status codes
+- Slug uniqueness checks on create/update
+- Junction table cleanup on delete (machine-production lines)
+- All lint checks pass cleanly
+
+---
+## Task ID: 9-b
+Agent: admin-crud
+Task: Build all admin CRUD pages (machines, news, projects, etc.)
+
+Work Log:
+- Created AdminMachinesPage.tsx with full CRUD: table view with image thumbnail, name, category, price, status, featured toggle, edit/delete actions; dialog form with language tabs (FR/EN/AR) for name, description, short description; category dropdown, machine type, capacity, price/currency, images (comma-separated URLs), cover image, featured switch, status select, order; search/filter; delete with AlertDialog confirmation
+- Created AdminProductionLinesPage.tsx with similar multilingual form, machine checkbox selection, featured toggle, status/order
+- Created AdminNewsPage.tsx with content editor, excerpt tabs, author field, published-at date picker, auto-slug from English title
+- Created AdminProjectsPage.tsx with multilingual title/description/content, client, location, date, images, cover image, status
+- Created AdminServicesPage.tsx with icon selector dropdown (42 Lucide icons), features (one per line per language), status/order
+- Created AdminPartnersPage.tsx with logo preview, website link, order management
+- Created AdminLeadsPage.tsx with status filter (all/new/contacted/qualified/closed), inline status change via Select, detail view dialog, status management
+- Created AdminSettingsPage.tsx with sections: Company Information (name, description, phone, email, whatsapp, website, address), Social Media Links (Facebook, LinkedIn, Instagram, YouTube, Twitter), Working Hours, SEO & Meta (title, description, OG image), Integrations (Google Maps, Analytics, reCAPTCHA)
+- Updated page.tsx router: replaced all AdminPlaceholder components with actual admin page components; removed Construction import
+- All admin API calls include Authorization: Bearer admin-token header
+- All pages use 'use client' directive, shadcn/ui components (Table, Dialog, AlertDialog, Tabs, Select, Badge, Switch, etc.), sonner toast notifications
+- ESLint passes cleanly with no errors
+- Dev server compiles successfully with Fast Refresh reload
+
+Stage Summary:
+- All 8 admin CRUD pages complete and functional
+- Multilingual forms with FR/EN/AR language tabs throughout
+- Full CRUD operations with API integration (create, read, update, delete)
+- Table views with sorting, search, and status filtering
+- Dialog-based forms with ScrollArea for long forms
+- AlertDialog confirmations for destructive actions
+- Consistent pattern: items[], loading, error, editItem, showForm state management
+Task ID: 9-a
+Agent: admin-foundation
+Task: Build admin panel foundation (auth, layout, sidebar, dashboard)
+
+Work Log:
+- Updated src/lib/store.ts to add admin auth state: isAdmin, adminToken, setAdminAuth, persisted to localStorage
+- Created src/components/admin/AdminSidebar.tsx – Collapsible shadcn Sidebar with 9 nav items (Dashboard, Machines, Production Lines, News, Projects, Services, Partners, Leads, Settings), Back to Website, and Logout buttons. Uses lucide-react icons. Active state highlighting. Icon-only compact mode.
+- Created src/components/admin/AdminLayout.tsx – Layout wrapper using SidebarProvider/SidebarInset with top bar (breadcrumb + admin avatar), routes to AdminLogin when not authenticated
+- Created src/components/admin/AdminLogin.tsx – Clean login form with username/password, show/hide password toggle, submits to POST /api/auth, calls setAdminAuth on success, toast notifications for errors, blue-themed centered card design
+- Created src/components/pages/admin/AdminDashboardPage.tsx – Dashboard with 5 stat cards (Machines, Production Lines, News, Projects, Leads), recent leads table (last 5), and quick actions panel. Fetches from public API endpoints and /api/leads with auth token.
+- Updated src/app/page.tsx to route all admin- prefixed pages through AdminLayout, with placeholder components for unimplemented admin sections
+- Updated src/components/layout/Footer.tsx to add subtle "Admin" link in the footer bottom bar
+- Lint passes cleanly with zero errors
+- Dev server compiles successfully
+
+Stage Summary:
+- Admin panel foundation complete
+- Login/auth flow working with /api/auth (credentials: admin/admin123)
+- Collapsible sidebar navigation with all 9 admin sections
+- Dashboard shows key metrics (machines, production lines, news, projects, leads counts) and recent leads table
+- Admin auth state persisted to localStorage via Zustand store
+- Placeholder pages for all admin sections not yet implemented

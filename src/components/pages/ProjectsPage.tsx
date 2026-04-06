@@ -1,0 +1,134 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { MapPin, ArrowRight, Briefcase } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useAppStore } from '@/lib/store';
+import { getTranslations } from '@/lib/i18n';
+import { getLocalizedValue, truncateText } from '@/lib/helpers';
+import type { Project } from '@/lib/types';
+
+export function ProjectsPage() {
+  const { locale, setCurrentPage, setCurrentSlug } = useAppStore();
+  const t = getTranslations(locale);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/projects?limit=100');
+        if (res.ok) {
+          const data = await res.json();
+          setProjects(data.data || data.projects || []);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const handleViewDetail = (project: Project) => {
+    setCurrentSlug(project.slug);
+    setCurrentPage('project-detail');
+  };
+
+  return (
+    <>
+      <section className="bg-gradient-to-br from-primary/5 via-background to-primary/10 py-16 lg:py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-3xl font-bold sm:text-4xl lg:text-5xl">{t.projects.title}</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">{t.projects.subtitle}</p>
+        </div>
+      </section>
+
+      <section className="py-12 lg:py-20">
+        <div className="container mx-auto px-4">
+          {loading ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-80 rounded-xl" />
+              ))}
+            </div>
+          ) : projects.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => (
+                <Card key={project.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => handleViewDetail(project)}>
+                  <div className="relative overflow-hidden rounded-t-xl">
+                    {(() => {
+                      try { const imgs = JSON.parse(project.images); return imgs[0] ? <img src={imgs[0]} alt={getLocalizedValue(project.title, locale)} className="h-52 w-full object-cover transition-transform duration-500 group-hover:scale-105" /> : null; } catch { return null; }
+                    })() || (
+                      <div className="h-52 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                        <Briefcase className="h-12 w-12 text-primary/30" />
+                      </div>
+                    )}
+                    <Badge className={`absolute top-3 start-3 ${project.status === 'completed' ? 'bg-green-600' : project.status === 'in_progress' ? 'bg-yellow-600' : 'bg-blue-600'} text-white`}>
+                      {project.status === 'completed' ? (locale === 'ar' ? 'مكتمل' : locale === 'fr' ? 'Terminé' : 'Completed') : project.status === 'in_progress' ? (locale === 'ar' ? 'قيد التنفيذ' : locale === 'fr' ? 'En Cours' : 'In Progress') : (locale === 'ar' ? 'تخطيط' : locale === 'fr' ? 'Planifié' : 'Planning')}
+                    </Badge>
+                  </div>
+                  <CardContent className="pt-4 px-5">
+                    <h3 className="font-semibold text-lg leading-tight mb-2 group-hover:text-primary transition-colors">
+                      {getLocalizedValue(project.title, locale)}
+                    </h3>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
+                      {project.clientName && (
+                        <span>{project.clientName}</span>
+                      )}
+                      {project.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {getLocalizedValue(project.location, locale)}
+                        </span>
+                      )}
+                    </div>
+                    {project.shortDescription && (
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {truncateText(getLocalizedValue(project.shortDescription, locale), 100)}
+                      </p>
+                    )}
+                    <Button size="sm" variant="outline" className="cursor-pointer">
+                      {locale === 'ar' ? 'عرض التفاصيل' : locale === 'fr' ? 'Voir Détails' : 'View Details'}
+                      <ArrowRight className="ml-1 h-3 w-3 rtl:rotate-180 rtl:ml-0 rtl:mr-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => { setCurrentSlug(`project-${i + 1}`); setCurrentPage('project-detail'); }}>
+                  <div className="h-52 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                    <Briefcase className="h-12 w-12 text-primary/30" />
+                  </div>
+                  <CardContent className="pt-4 px-5">
+                    <h3 className="font-semibold text-lg leading-tight mb-2">
+                      {locale === 'ar' ? `مشروع ${i + 1}` : locale === 'fr' ? `Projet ${i + 1}` : `Project ${i + 1}`}
+                    </h3>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
+                      <span>{locale === 'ar' ? 'عميل' : locale === 'fr' ? 'Client' : 'Client'} {i + 1}</span>
+                      <MapPin className="h-3 w-3" />
+                      <span>{locale === 'ar' ? 'الجزائر' : locale === 'fr' ? 'Alger' : 'Algiers'}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {locale === 'ar' ? 'مشروع صناعي ناجح تم إنجازه باحترافية' : locale === 'fr' ? 'Projet industriel réussi réalisé avec professionnalisme' : 'Successfully completed industrial project'}
+                    </p>
+                    <Button size="sm" variant="outline" className="cursor-pointer">
+                      {locale === 'ar' ? 'عرض التفاصيل' : locale === 'fr' ? 'Voir Détails' : 'View Details'}
+                      <ArrowRight className="ml-1 h-3 w-3 rtl:rotate-180 rtl:ml-0 rtl:mr-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}

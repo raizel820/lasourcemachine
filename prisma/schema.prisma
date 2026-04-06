@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Admin authentication
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Machine categories (e.g., "CNC Machines", "Press Machines")
+model Category {
+  id        String    @id @default(cuid())
+  name      String    // JSON string {en, fr, ar}
+  slug      String    @unique
+  icon      String?
+  order     Int       @default(0)
+  machines  Machine[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// Machine models
+model Machine {
+  id          String    @id @default(cuid())
+  name        String    // JSON string {en, fr, ar}
+  slug        String    @unique
+  description String    // JSON string {en, fr, ar}
+  shortDesc   String?   // JSON string {en, fr, ar}
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  
+  // Specs stored as JSON: {en: [{key, value}], fr: [...], ar: [...]}
+  specs       String?   // JSON
+  
+  // Images stored as JSON array of URLs
+  images      String    @default("[]") // JSON array
+  coverImage  String?
+  pdfUrl      String?
+  
+  // Pricing
+  basePrice   Float?
+  currency    String    @default("DZD")
+  
+  // Status
+  featured    Boolean   @default(false)
+  status      String    @default("draft") // draft, published
+  order       Int       @default(0)
+  
+  // Machine type
+  machineType String?   // e.g., "CNC", "Press", "Lathe", "Mill"
+  capacity    String?   // e.g., "100 tons", "500mm"
+  
+  // Relations
+  productionLines MachineProductionLine[]
+  leads           Lead[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Production Lines
+model ProductionLine {
+  id          String    @id @default(cuid())
+  name        String    // JSON string {en, fr, ar}
+  slug        String    @unique
+  description String    // JSON string {en, fr, ar}
+  shortDesc   String?   // JSON string {en, fr, ar}
+  images      String    @default("[]") // JSON array
+  coverImage  String?
+  featured    Boolean   @default(false)
+  status      String    @default("draft")
+  order       Int       @default(0)
+  
+  machines MachineProductionLine[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Junction table for machines in production lines
+model MachineProductionLine {
+  id                String          @id @default(cuid())
+  machineId         String
+  productionLineId  String
+  order             Int             @default(0)
+  machine           Machine         @relation(fields: [machineId], references: [id])
+  productionLine    ProductionLine  @relation(fields: [productionLineId], references: [id])
+  
+  @@unique([machineId, productionLineId])
+}
+
+// News / Blog posts
+model NewsPost {
+  id          String   @id @default(cuid())
+  title       String   // JSON string {en, fr, ar}
+  slug        String   @unique
+  content     String   // JSON string {en, fr, ar} - rich text/HTML
+  excerpt     String?  // JSON string {en, fr, ar}
+  coverImage  String?
+  images      String   @default("[]")
+  author      String?
+  status      String   @default("draft")
+  publishedAt DateTime?
+  order       Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Projects / Case Studies
+model Project {
+  id          String   @id @default(cuid())
+  title       String   // JSON string {en, fr, ar}
+  slug        String   @unique
+  description String   // JSON string {en, fr, ar}
+  content     String?  // JSON string {en, fr, ar}
+  coverImage  String?
+  images      String   @default("[]")
+  client      String?
+  location    String?
+  date        String?
+  status      String   @default("draft")
+  order       Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Services
+model Service {
+  id          String   @id @default(cuid())
+  title       String   // JSON string {en, fr, ar}
+  description String   // JSON string {en, fr, ar}
+  icon        String?  // Lucide icon name
+  features    String?  // JSON string {en, fr, ar} - array of features
+  image       String?
+  order       Int      @default(0)
+  status      String   @default("draft")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Partners / Suppliers
+model Partner {
+  id      String   @id @default(cuid())
+  name    String
+  logo    String?
+  website String?
+  order   Int      @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// FAQ items
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String   // JSON string {en, fr, ar}
+  answer    String   // JSON string {en, fr, ar}
+  order     Int      @default(0)
+  category  String?  // e.g., "machines", "services", "general"
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Contact form leads
+model Lead {
+  id              String   @id @default(cuid())
+  name            String
+  email           String?
+  phone           String?
+  company         String?
+  message         String
+  machineInterest String?
+  machineId       String?
+  machine         Machine? @relation(fields: [machineId], references: [id])
+  subject         String?
+  status          String   @default("new") // new, contacted, qualified, closed
+  notes           String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Site settings (key-value)
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String // JSON string for complex values
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Media library
+model Media {
+  id        String   @id @default(cuid())
+  filename  String
+  url       String
+  type      String   // "image", "pdf", "video"
+  mimeType  String?
+  size      Int?
+  alt       String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
