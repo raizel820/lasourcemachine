@@ -205,12 +205,12 @@ export function Footer() {
                   ? 'Conçu avec ❤️ en Algérie'
                   : 'Made with ❤️ in Algeria'}
             </p>
-            <button
-              onClick={() => setCurrentPage('admin')}
-              className="text-xs text-slate-600 hover:text-slate-400 transition-colors cursor-pointer"
+            <a
+              href="/eurl/lasource"
+              className="text-xs text-slate-600 hover:text-slate-400 transition-colors"
             >
               Admin
-            </button>
+            </a>
           </div>
         </div>
       </div>

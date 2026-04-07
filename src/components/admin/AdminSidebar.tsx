@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import {
   LayoutDashboard,
@@ -29,38 +31,34 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { COMPANY } from '@/lib/constants';
-import { cn } from '@/lib/utils';
 
 interface NavItem {
   id: string;
   label: string;
   icon: React.ElementType;
-  page: string;
-  isAction?: boolean;
+  href: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, page: 'admin' },
-  { id: 'machines', label: 'Machines', icon: Factory, page: 'admin-machines' },
-  { id: 'production-lines', label: 'Production Lines', icon: GitBranch, page: 'admin-production-lines' },
-  { id: 'news', label: 'News', icon: Newspaper, page: 'admin-news' },
-  { id: 'projects', label: 'Projects', icon: Briefcase, page: 'admin-projects' },
-  { id: 'services', label: 'Services', icon: Wrench, page: 'admin-services' },
-  { id: 'partners', label: 'Partners', icon: Handshake, page: 'admin-partners' },
-  { id: 'leads', label: 'Leads', icon: MessageSquare, page: 'admin-leads' },
-  { id: 'settings', label: 'Settings', icon: Settings, page: 'admin-settings' },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/eurl/lasource/dashboard' },
+  { id: 'machines', label: 'Machines', icon: Factory, href: '/eurl/lasource/machines' },
+  { id: 'production-lines', label: 'Production Lines', icon: GitBranch, href: '/eurl/lasource/production-lines' },
+  { id: 'news', label: 'News', icon: Newspaper, href: '/eurl/lasource/news' },
+  { id: 'projects', label: 'Projects', icon: Briefcase, href: '/eurl/lasource/projects' },
+  { id: 'services', label: 'Services', icon: Wrench, href: '/eurl/lasource/services' },
+  { id: 'partners', label: 'Partners', icon: Handshake, href: '/eurl/lasource/partners' },
+  { id: 'leads', label: 'Leads', icon: MessageSquare, href: '/eurl/lasource/leads' },
+  { id: 'settings', label: 'Settings', icon: Settings, href: '/eurl/lasource/settings' },
 ];
 
 export function AdminSidebar() {
-  const { currentPage, setCurrentPage, setAdminAuth } = useAppStore();
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page);
-  };
+  const pathname = usePathname();
+  const router = useRouter();
+  const { setAdminAuth } = useAppStore();
 
   const handleLogout = () => {
     setAdminAuth(false, null);
-    setCurrentPage('home');
+    router.push('/');
   };
 
   return (
@@ -71,15 +69,17 @@ export function AdminSidebar() {
             <SidebarMenuButton
               size="lg"
               className="hover:bg-sidebar-accent/50"
-              onClick={() => handleNavigate('admin')}
+              asChild
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <Factory className="size-4" />
-              </div>
-              <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-semibold text-sm">{COMPANY.name}</span>
-                <span className="text-xs text-muted-foreground">Admin Panel</span>
-              </div>
+              <Link href="/eurl/lasource/dashboard">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
+                  <Factory className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-semibold text-sm">{COMPANY.name}</span>
+                  <span className="text-xs text-muted-foreground">Admin Panel</span>
+                </div>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -95,12 +95,14 @@ export function AdminSidebar() {
               {NAV_ITEMS.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    isActive={currentPage === item.page}
+                    isActive={pathname === item.href}
                     tooltip={item.label}
-                    onClick={() => handleNavigate(item.page)}
+                    asChild
                   >
-                    <item.icon className="size-4" />
-                    <span>{item.label}</span>
+                    <Link href={item.href}>
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -114,10 +116,12 @@ export function AdminSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Back to Website"
-              onClick={() => handleNavigate('home')}
+              asChild
             >
-              <ArrowLeft className="size-4" />
-              <span>Back to Website</span>
+              <Link href="/">
+                <ArrowLeft className="size-4" />
+                <span>Back to Website</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

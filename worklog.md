@@ -162,3 +162,31 @@ Stage Summary:
 - Dashboard shows key metrics (machines, production lines, news, projects, leads counts) and recent leads table
 - Admin auth state persisted to localStorage via Zustand store
 - Placeholder pages for all admin sections not yet implemented
+
+---
+Task ID: 12
+Agent: admin-routes
+Task: Convert admin panel to real Next.js routes at /eurl/lasource
+
+Work Log:
+- Created /app/eurl/lasource/layout.tsx with no-index metadata (server component, no Navbar/Footer)
+- Created /app/eurl/lasource/page.tsx (redirect to /eurl/lasource/dashboard)
+- Created AdminAuthGuard component for auth checking (wraps children with AdminLayout when authenticated, shows AdminLogin otherwise)
+- Created 9 route page files: dashboard, machines, production-lines, news, projects, services, partners, leads, settings
+- Rewrote AdminSidebar to use next/link with asChild prop and usePathname for active state
+- Rewrote AdminLayout to use usePathname for breadcrumbs (PATH_TITLES mapping instead of PAGE_TITLES)
+- Updated AdminLogin to redirect to /eurl/lasource/dashboard after successful login via router.push
+- Updated AdminDashboardPage to use router.push instead of setCurrentPage for all navigation (stat cards, quick actions, view all leads)
+- Cleaned up page.tsx: removed all admin imports (AdminLayout, AdminDashboardPage, etc.), removed isAdminPage check, kept only public SPA routing
+- Updated Footer admin link from setCurrentPage('admin') button to real <a href="/eurl/lasource"> tag
+- Verified no other admin CRUD pages used setCurrentPage (only AdminDashboardPage did)
+- Lint passes cleanly with zero errors
+- Dev server compiles successfully
+
+Stage Summary:
+- Admin panel now accessible at /eurl/lasource/dashboard with real Next.js routes
+- Each admin section has its own URL (e.g., /eurl/lasource/machines, /eurl/lasource/news)
+- Uses real Next.js routing with Link components and usePathname for active state
+- Auth guard protects all admin routes client-side via AdminAuthGuard component
+- Public SPA at / is clean and separate with no admin-related code
+- Login redirects to dashboard; logout redirects to home page

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import {
   Factory,
@@ -51,7 +52,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function AdminDashboardPage() {
-  const { setCurrentPage, adminToken } = useAppStore();
+  const router = useRouter();
+  const { adminToken } = useAppStore();
   const [stats, setStats] = useState<StatsData>({
     machines: 0,
     productionLines: 0,
@@ -126,7 +128,7 @@ export function AdminDashboardPage() {
       icon: Factory,
       color: 'text-blue-600',
       bg: 'bg-blue-50 dark:bg-blue-950',
-      page: 'admin-machines',
+      href: '/eurl/lasource/machines',
     },
     {
       title: 'Production Lines',
@@ -134,7 +136,7 @@ export function AdminDashboardPage() {
       icon: GitBranch,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50 dark:bg-emerald-950',
-      page: 'admin-production-lines',
+      href: '/eurl/lasource/production-lines',
     },
     {
       title: 'News Posts',
@@ -142,7 +144,7 @@ export function AdminDashboardPage() {
       icon: Newspaper,
       color: 'text-amber-600',
       bg: 'bg-amber-50 dark:bg-amber-950',
-      page: 'admin-news',
+      href: '/eurl/lasource/news',
     },
     {
       title: 'Total Projects',
@@ -150,7 +152,7 @@ export function AdminDashboardPage() {
       icon: Briefcase,
       color: 'text-purple-600',
       bg: 'bg-purple-50 dark:bg-purple-950',
-      page: 'admin-projects',
+      href: '/eurl/lasource/projects',
     },
     {
       title: 'Leads (New)',
@@ -158,7 +160,7 @@ export function AdminDashboardPage() {
       icon: MessageSquare,
       color: 'text-rose-600',
       bg: 'bg-rose-50 dark:bg-rose-950',
-      page: 'admin-leads',
+      href: '/eurl/lasource/leads',
     },
   ];
 
@@ -178,7 +180,7 @@ export function AdminDashboardPage() {
           <Card
             key={card.title}
             className="cursor-pointer transition-shadow hover:shadow-md"
-            onClick={() => setCurrentPage(card.page)}
+            onClick={() => router.push(card.href)}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -213,7 +215,7 @@ export function AdminDashboardPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage('admin-leads')}
+              onClick={() => router.push('/eurl/lasource/leads')}
               className="text-xs"
             >
               View All
@@ -283,18 +285,18 @@ export function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             {[
-              { label: 'Add New Machine', page: 'admin-machines', icon: Factory },
-              { label: 'Create News Post', page: 'admin-news', icon: Newspaper },
-              { label: 'Add Project', page: 'admin-projects', icon: Briefcase },
-              { label: 'View All Leads', page: 'admin-leads', icon: Users },
-              { label: 'Manage Services', page: 'admin-services', icon: GitBranch },
-              { label: 'Site Settings', page: 'admin-settings', icon: MessageSquare },
+              { label: 'Add New Machine', href: '/eurl/lasource/machines', icon: Factory },
+              { label: 'Create News Post', href: '/eurl/lasource/news', icon: Newspaper },
+              { label: 'Add Project', href: '/eurl/lasource/projects', icon: Briefcase },
+              { label: 'View All Leads', href: '/eurl/lasource/leads', icon: Users },
+              { label: 'Manage Services', href: '/eurl/lasource/services', icon: GitBranch },
+              { label: 'Site Settings', href: '/eurl/lasource/settings', icon: MessageSquare },
             ].map((action) => (
               <Button
                 key={action.label}
                 variant="ghost"
                 className="w-full justify-start gap-3 text-sm h-10"
-                onClick={() => setCurrentPage(action.page)}
+                onClick={() => router.push(action.href)}
               >
                 <action.icon className="h-4 w-4 text-blue-600" />
                 {action.label}

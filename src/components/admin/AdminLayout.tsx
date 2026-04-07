@@ -1,8 +1,8 @@
 'use client';
 
-import { useAppStore } from '@/lib/store';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { AdminSidebar } from './AdminSidebar';
-import { AdminLogin } from './AdminLogin';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -15,26 +15,21 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Shield } from 'lucide-react';
 
-const PAGE_TITLES: Record<string, string> = {
-  admin: 'Dashboard',
-  'admin-machines': 'Machines',
-  'admin-production-lines': 'Production Lines',
-  'admin-news': 'News',
-  'admin-projects': 'Projects',
-  'admin-services': 'Services',
-  'admin-partners': 'Partners',
-  'admin-leads': 'Leads',
-  'admin-settings': 'Settings',
+const PATH_TITLES: Record<string, string> = {
+  '/eurl/lasource/dashboard': 'Dashboard',
+  '/eurl/lasource/machines': 'Machines',
+  '/eurl/lasource/production-lines': 'Production Lines',
+  '/eurl/lasource/news': 'News',
+  '/eurl/lasource/projects': 'Projects',
+  '/eurl/lasource/services': 'Services',
+  '/eurl/lasource/partners': 'Partners',
+  '/eurl/lasource/leads': 'Leads',
+  '/eurl/lasource/settings': 'Settings',
 };
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { currentPage, isAdmin } = useAppStore();
-
-  if (!isAdmin) {
-    return <AdminLogin />;
-  }
-
-  const pageTitle = PAGE_TITLES[currentPage] || 'Admin';
+  const pathname = usePathname();
+  const pageTitle = PATH_TITLES[pathname] || 'Admin';
 
   return (
     <SidebarProvider>
@@ -48,15 +43,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
                 <BreadcrumbLink
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    useAppStore.getState().setCurrentPage('admin');
-                  }}
-                  className="flex items-center gap-1"
+                  href="/eurl/lasource/dashboard"
+                  asChild
                 >
-                  <Shield className="h-3.5 w-3.5 text-blue-600" />
-                  Admin
+                  <Link href="/eurl/lasource/dashboard" className="flex items-center gap-1">
+                    <Shield className="h-3.5 w-3.5 text-blue-600" />
+                    Admin
+                  </Link>
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator className="hidden md:block" />

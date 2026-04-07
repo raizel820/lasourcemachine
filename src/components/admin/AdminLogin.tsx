@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { COMPANY } from '@/lib/constants';
 import { Factory, Eye, EyeOff, Loader2, Lock, User } from 'lucide-react';
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 
 export function AdminLogin() {
+  const router = useRouter();
   const { setAdminAuth } = useAppStore();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +41,7 @@ export function AdminLogin() {
       if (data.success) {
         setAdminAuth(true, data.token);
         toast.success(`Welcome back, ${data.user.name}!`);
+        router.push('/eurl/lasource/dashboard');
       } else {
         toast.error(data.error || 'Login failed');
       }
