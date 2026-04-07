@@ -190,3 +190,28 @@ Stage Summary:
 - Auth guard protects all admin routes client-side via AdminAuthGuard component
 - Public SPA at / is clean and separate with no admin-related code
 - Login redirects to dashboard; logout redirects to home page
+
+---
+Task ID: 13
+Agent: main-agent
+Task: Fix all data persistence and live data issues across the website
+
+Work Log:
+- **Fixed useSiteSettings hook** — Rewrote with reactive subscriber pattern for cache invalidation. When admin saves settings, `invalidateSettingsCache()` increments a global version counter, notifies all subscriber callbacks, and each hook instance re-fetches automatically. WhatsApp button, Navbar, Footer, Contact page all update in real-time after settings change.
+- **Fixed AdminNewsPage** — Changed validation from requiring English title to requiring at least ONE language title (EN, FR, or AR). Fixed slug generation to use first available title. Ensured empty language fields default to empty strings in JSON output instead of undefined.
+- **Fixed HomePage** — Changed machines API URL from `isFeatured=true` to `featured=true` to match API parameter name. Replaced hardcoded stats `{15, 500, 200, 10}` with `site.stats` from `useSiteSettings()`. Replaced 6 fake machine placeholder cards, 5 fake service icons, 8 fake partner cards, and 3 fake news cards with proper trilingual empty state messages.
+- **Fixed ServicesPage** — Removed `DEFAULT_SERVICES` hardcoded array (5 full service objects with trilingual content). Removed `displayServices` fallback pattern. Simplified rendering to always use API data format. Added proper empty state with trilingual "No services available" message.
+- **Fixed FAQPage** — Removed `DEFAULT_FAQS` hardcoded array (6 full Q&A objects). Removed `displayFaqs` fallback pattern. Simplified rendering to always use API format. Added proper empty state with trilingual "No FAQs available" message.
+- **Fixed NewsPage** — Replaced 3 fake news placeholder cards with proper empty state.
+- **Fixed ProjectsPage** — Replaced 3 fake project placeholder cards with proper empty state.
+- **Fixed ProductionLinesPage** — Replaced 3 fake production line placeholder cards with proper empty state.
+- **Fixed AboutPage** — Imported `useSiteSettings` and replaced hardcoded stats `'15+'`, `'500+'`, `'200+'`, `'10+'` with `site.stats.years+`, `.machines+`, `.clients+`, `.countries+` from live settings.
+- **Enhanced AdminSettingsPage** — Added Homepage Statistics section with 4 numeric fields: Years Experience, Machines Sold, Clients, Countries. Added default values (15, 500, 200, 10).
+
+Stage Summary:
+- All 8 bugs/issues fixed and verified with zero lint errors
+- All public pages now exclusively use live data from API/database
+- Zero hardcoded mock/placeholder data remaining in any public page
+- Settings changes in admin propagate immediately to all components via reactive cache invalidation
+- News creation now works with any language title (not just English)
+- Admin can configure homepage stats from the settings page

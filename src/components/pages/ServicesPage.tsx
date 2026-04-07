@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Wrench, Ship, Settings, GraduationCap, ClipboardList, Check, ArrowRight } from 'lucide-react';
+import { Wrench, Check, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,16 +11,6 @@ import { useAppStore } from '@/lib/store';
 import { getTranslations } from '@/lib/i18n';
 import { getLocalizedValue, getLocalizedArray } from '@/lib/helpers';
 import type { Service } from '@/lib/types';
-
-const SERVICE_ICONS = [Wrench, Ship, Settings, GraduationCap, ClipboardList];
-
-const DEFAULT_SERVICES = [
-  { icon: 'wrench', title: { en: 'Installation & Setup', fr: 'Installation & Mise en Service', ar: 'التركيب والتشغيل' }, desc: { en: 'Professional installation and commissioning of all types of industrial machines and production lines.', fr: 'Installation professionnelle et mise en service de tous types de machines industrielles et lignes de production.', ar: 'تركيب احترافي وتشغيل جميع أنواع الآلات الصناعية وخطوط الإنتاج.' }, features: ['Site assessment', 'Professional installation', 'Testing & commissioning'] },
-  { icon: 'ship', title: { en: 'Spare Parts Supply', fr: 'Fourniture de Pièces Détachées', ar: 'توريد قطع الغيار' }, desc: { en: 'Quick and reliable supply of genuine spare parts for all machine brands and models.', fr: 'Approvisionnement rapide et fiable de pièces détachées d\'origine pour toutes les marques et modèles de machines.', ar: 'توريد سريع وموثوق لقطع الغيار الأصلية لجميع العلامات التجارية والنماذج.' }, features: ['OEM parts', 'Fast delivery', 'Technical support'] },
-  { icon: 'settings', title: { en: 'Maintenance & Repair', fr: 'Maintenance & Réparation', ar: 'الصيانة والإصلاح' }, desc: { en: 'Preventive and corrective maintenance services to ensure optimal machine performance.', fr: 'Services de maintenance préventive et corrective pour assurer des performances optimales des machines.', ar: 'خدمات صيانة وقائية وتصحيحية لضمان الأداء الأمثل للآلات.' }, features: ['Preventive maintenance', 'Emergency repair', 'Performance optimization'] },
-  { icon: 'graduation', title: { en: 'Technical Training', fr: 'Formation Technique', ar: 'التدريب الفني' }, desc: { en: 'Comprehensive training programs for operators and maintenance technicians.', fr: 'Programmes de formation complets pour les opérateurs et techniciens de maintenance.', ar: 'برامج تدريب شاملة للمشغلين وفنيي الصيانة.' }, features: ['Operator training', 'Safety courses', 'Certification programs'] },
-  { icon: 'clipboard', title: { en: 'Consulting & Engineering', fr: 'Conseil & Ingénierie', ar: 'الاستشارات والهندسة' }, desc: { en: 'Expert consulting services for plant design, process optimization, and industrial automation.', fr: 'Services de conseil expert pour la conception d\'usines, l\'optimisation des processus et l\'automatisation industrielle.', ar: 'خدمات استشارية متخصصة لتصميم المصانع وتحسين العمليات والأتمتة الصناعية.' }, features: ['Plant design', 'Process optimization', 'Automation solutions'] },
-];
 
 export function ServicesPage() {
   const { locale, setCurrentPage } = useAppStore();
@@ -44,8 +34,6 @@ export function ServicesPage() {
     fetchData();
   }, []);
 
-  const displayServices = services.length > 0 ? services : DEFAULT_SERVICES;
-
   return (
     <>
       {/* Page Header */}
@@ -64,18 +52,23 @@ export function ServicesPage() {
                 <Skeleton key={i} className="h-64 rounded-xl" />
               ))}
             </div>
+          ) : services.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <Wrench className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">{locale === 'ar' ? 'لا توجد خدمات حالياً' : locale === 'fr' ? 'Aucun service disponible' : 'No services available'}</p>
+              <p className="text-sm mt-1">{locale === 'ar' ? 'ترقبوا المزيد قريباً' : locale === 'fr' ? 'Revenez bientôt' : 'Check back soon'}</p>
+            </div>
           ) : (
             <div className="space-y-8">
-              {displayServices.map((service, i) => {
-                const Icon = SERVICE_ICONS[i % SERVICE_ICONS.length];
-                const isFromApi = 'id' in service && 'name' in service && 'description' in service && typeof service.name === 'string';
-                const name = isFromApi ? getLocalizedValue((service as Service).name, locale) : service.title[locale] || service.title.en;
-                const desc = isFromApi ? getLocalizedValue((service as Service).description, locale) : service.desc[locale] || service.desc.en;
-                const features = isFromApi ? getLocalizedArray((service as Service).features || '', locale) : service.features;
+              {services.map((service, i) => {
+                const Icon = Wrench;
                 const isReversed = i % 2 !== 0;
+                const name = getLocalizedValue(service.title || service.name, locale);
+                const desc = getLocalizedValue(service.description, locale);
+                const features = getLocalizedArray(service.features || '', locale);
 
                 return (
-                  <Card key={isFromApi ? (service as Service).id : i} className="overflow-hidden">
+                  <Card key={service.id} className="overflow-hidden">
                     <div className={`grid grid-cols-1 lg:grid-cols-2 ${isReversed ? 'lg:grid-flow-dense' : ''}`}>
                       {/* Icon / Visual */}
                       <div className={`flex items-center justify-center p-8 lg:p-12 ${isReversed ? 'lg:col-start-2' : ''} bg-gradient-to-br from-primary/5 to-primary/10`}>

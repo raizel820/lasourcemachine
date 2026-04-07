@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAppStore } from '@/lib/store';
 import { getTranslations } from '@/lib/i18n';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 export function AboutPage() {
   const { locale, setCurrentPage } = useAppStore();
   const t = getTranslations(locale);
+  const site = useSiteSettings();
 
   const values = [
     { icon: Shield, title: locale === 'ar' ? 'الجودة' : locale === 'fr' ? 'Qualité' : 'Quality', desc: locale === 'ar' ? 'نلتزم بأعلى معايير الجودة في جميع منتجاتنا وخدماتنا' : locale === 'fr' ? 'Nous nous engageons aux plus hauts standards de qualité dans tous nos produits et services' : 'We are committed to the highest quality standards in all our products and services' },
@@ -65,10 +67,10 @@ export function AboutPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { icon: Factory, value: '15+', label: t.stats.yearsExperience },
-                { icon: Target, value: '500+', label: t.stats.machinesSold },
-                { icon: Users, value: '200+', label: t.stats.clients },
-                { icon: Globe, value: '10+', label: t.stats.countries },
+                { icon: Factory, value: `${site.stats.years}+`, label: t.stats.yearsExperience },
+                { icon: Target, value: `${site.stats.machines}+`, label: t.stats.machinesSold },
+                { icon: Users, value: `${site.stats.clients}+`, label: t.stats.clients },
+                { icon: Globe, value: `${site.stats.countries}+`, label: t.stats.countries },
               ].map((stat, i) => (
                 <Card key={i} className="text-center hover:shadow-md transition-shadow">
                   <CardContent className="pt-6 px-4">

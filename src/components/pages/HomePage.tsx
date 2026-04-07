@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/shared/SectionHeader';
 import { RequestQuoteModal } from '@/components/shared/RequestQuoteModal';
 import { useAppStore } from '@/lib/store';
 import { getTranslations } from '@/lib/i18n';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { getLocalizedValue, getLocalizedArray, formatDate, truncateText } from '@/lib/helpers';
 import { formatPrice, convertPrice } from '@/lib/currency';
 import { COMPANY } from '@/lib/constants';
@@ -74,6 +75,7 @@ function StatCounter({ value, suffix, label, locale }: { value: number; suffix: 
 export function HomePage() {
   const { locale, currency, setCurrentPage, setCurrentSlug } = useAppStore();
   const t = getTranslations(locale);
+  const site = useSiteSettings();
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [quoteMachine, setQuoteMachine] = useState<{ name: string; id: string } | null>(null);
 
@@ -90,7 +92,7 @@ export function HomePage() {
       setLoading(true);
       try {
         const endpoints = [
-          { url: '/api/machines?limit=6&isFeatured=true', setter: (d: any) => setMachines(d.data || d.machines || []) },
+          { url: '/api/machines?limit=6&featured=true', setter: (d: any) => setMachines(d.data || d.machines || []) },
           { url: '/api/categories', setter: (d: any) => setCategories(d.data || d.categories || []) },
           { url: '/api/services?limit=5', setter: (d: any) => setServices(d.data || d.services || []) },
           { url: '/api/partners', setter: (d: any) => setPartners(d.data || d.partners || []) },
@@ -138,10 +140,10 @@ export function HomePage() {
     cat ? getLocalizedValue(cat.name, locale) : '';
 
   const stats = [
-    { value: 15, label: t.stats.yearsExperience },
-    { value: 500, label: t.stats.machinesSold },
-    { value: 200, label: t.stats.clients },
-    { value: 10, label: t.stats.countries },
+    { value: site.stats.years, label: t.stats.yearsExperience },
+    { value: site.stats.machines, label: t.stats.machinesSold },
+    { value: site.stats.clients, label: t.stats.clients },
+    { value: site.stats.countries, label: t.stats.countries },
   ];
 
   return (
@@ -269,31 +271,9 @@ export function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer">
-                  <div className="h-52 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                    <Factory className="h-12 w-12 text-primary/30" />
-                  </div>
-                  <CardContent className="pt-4 px-5">
-                    <Badge variant="secondary" className="text-xs mb-2">
-                      {locale === 'ar' ? 'فئة' : locale === 'fr' ? 'Catégorie' : 'Category'} {i + 1}
-                    </Badge>
-                    <h3 className="font-semibold text-lg leading-tight mb-1">
-                      {locale === 'ar' ? 'آلة صناعية' : locale === 'fr' ? 'Machine Industrielle' : 'Industrial Machine'} {i + 1}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {locale === 'ar' ? 'وصف قصير للآلة الصناعية عالية الجودة' : locale === 'fr' ? 'Description courte de la machine industrielle de haute qualité' : 'Short description of the high-quality industrial machine'}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-primary">{formatPrice(i * 1500000, currency, locale)}</span>
-                      <Button size="sm" onClick={() => setQuoteOpen(true)} className="cursor-pointer">
-                        {t.machines.requestQuote}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-12 text-muted-foreground">
+              <Factory className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p>{locale === 'ar' ? 'لا توجد آلات حالياً' : locale === 'fr' ? 'Aucune machine disponible' : 'No machines available'}</p>
             </div>
           )}
           <div className="mt-10 text-center">
@@ -337,25 +317,10 @@ export function HomePage() {
                 );
               })
             ) : (
-              DEFAULT_SERVICE_ICONS.map((Icon, i) => (
-                <Card key={i} className="text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <CardContent className="pt-8 px-5 flex flex-col items-center">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
-                      <Icon className="h-7 w-7" />
-                    </div>
-                    <h3 className="font-semibold text-base mb-2">
-                      {['Installation', 'Maintenance', 'Formation', 'SAV', 'Consulting'][i]}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {locale === 'ar'
-                        ? ['تركيب الاحترافي', 'صيانة دورية', 'تدريب الفنيين', 'خدمة ما بعد البيع', 'استشارات فنية'][i]
-                        : locale === 'fr'
-                          ? ['Installation professionnelle', 'Maintenance préventive', 'Formation technique', 'Service après-vente', 'Conseil & expertise'][i]
-                          : ['Professional installation', 'Preventive maintenance', 'Technical training', 'After-sales service', 'Consulting & expertise'][i]}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))
+              <div className="text-center py-12 text-muted-foreground col-span-full">
+                <Wrench className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>{locale === 'ar' ? 'لا توجد خدمات حالياً' : locale === 'fr' ? 'Aucun service disponible' : 'No services available'}</p>
+              </div>
             )}
           </div>
           <div className="mt-10 text-center">
@@ -387,11 +352,7 @@ export function HomePage() {
                   </div>
                 ))
               ) : (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex-shrink-0 flex items-center justify-center h-20 w-40 rounded-xl border bg-card p-4">
-                    <span className="text-sm font-medium text-muted-foreground">Partner {i + 1}</span>
-                  </div>
-                ))
+                <p className="text-center py-8 text-muted-foreground text-sm">{locale === 'ar' ? 'لا يوجد شركاء حالياً' : locale === 'fr' ? 'Aucun partenaire' : 'No partners yet'}</p>
               )}
             </div>
           </div>
@@ -462,26 +423,9 @@ export function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => { setCurrentSlug(`news-${i + 1}`); setCurrentPage('news-detail'); }}>
-                  <div className="h-48 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                    <ClipboardList className="h-10 w-10 text-primary/30" />
-                  </div>
-                  <CardContent className="pt-4 px-5">
-                    <p className="text-xs text-muted-foreground mb-2">{formatDate(new Date(), locale)}</p>
-                    <h3 className="font-semibold text-base leading-tight mb-2">
-                      {locale === 'ar' ? 'أحدث أخبارنا' : locale === 'fr' ? 'Dernière Nouvelle' : 'Latest News'} {i + 1}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {locale === 'ar' ? 'اقرأ آخر التطورات في عالم الآلات الصناعية' : locale === 'fr' ? 'Découvrez les dernières avancées dans le monde des machines industrielles' : 'Discover the latest developments in industrial machinery'}
-                    </p>
-                    <div className="mt-3">
-                      <span className="text-sm font-medium text-primary">{t.news.readMore} →</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-12 text-muted-foreground">
+              <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p>{locale === 'ar' ? 'لا توجد أخبار حالياً' : locale === 'fr' ? 'Aucune actualité' : 'No news available'}</p>
             </div>
           )}
           <div className="mt-10 text-center">

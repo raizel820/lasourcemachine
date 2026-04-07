@@ -121,29 +121,10 @@ export function ProductionLinesPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => { setCurrentSlug(`production-line-${i + 1}`); setCurrentPage('production-line-detail'); }}>
-                  <div className="h-52 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                    <Factory className="h-12 w-12 text-primary/30" />
-                  </div>
-                  <CardContent className="pt-4 px-5">
-                    <Badge variant="secondary" className="text-xs mb-2">
-                      {3 + i} {locale === 'ar' ? 'آلات' : locale === 'fr' ? 'machines' : 'machines'}
-                    </Badge>
-                    <h3 className="font-semibold text-lg leading-tight mb-2">
-                      {locale === 'ar' ? `خط إنتاج ${i + 1}` : locale === 'fr' ? `Ligne de Production ${i + 1}` : `Production Line ${i + 1}`}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {locale === 'ar' ? 'خط إنتاج متكامل يضم عدة آلات صناعية عالية الجودة' : locale === 'fr' ? 'Ligne de production complète comprenant plusieurs machines industrielles de haute qualité' : 'Complete production line with several high-quality industrial machines'}
-                    </p>
-                    <Button size="sm" variant="outline" className="cursor-pointer">
-                      <Eye className="mr-2 h-4 w-4 rtl:mr-0 rtl:ml-2 rtl:rotate-180" />
-                      {locale === 'ar' ? 'عرض التفاصيل' : locale === 'fr' ? 'Voir Détails' : 'View Details'}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-16 text-muted-foreground">
+              <Factory className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">{locale === 'ar' ? 'لا توجد خطوط إنتاج حالياً' : locale === 'fr' ? 'Aucune ligne de production disponible' : 'No production lines available'}</p>
+              <p className="text-sm mt-1">{locale === 'ar' ? 'ترقبوا المزيد قريباً' : locale === 'fr' ? 'Revenez bientôt' : 'Check back soon'}</p>
             </div>
           )}
         </div>

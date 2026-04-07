@@ -47,6 +47,10 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   seo_og_image: '',
   google_maps_api_key: '',
   google_analytics_id: '',
+  stats_years: '15',
+  stats_machines: '500',
+  stats_clients: '200',
+  stats_countries: '10',
   recaptcha_site_key: '',
   recaptcha_secret_key: '',
 };
@@ -298,7 +302,30 @@ export function AdminSettingsPage() {
 
           <Separator />
 
-          {/* Integrations */}
+          {/* Homepage Stats */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">Homepage Statistics</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label>Years Experience</Label>
+                <Input type="number" value={settings.stats_years || '15'} onChange={(e) => updateSetting('stats_years', e.target.value)} placeholder="15" />
+              </div>
+              <div className="space-y-2">
+                <Label>Machines Sold</Label>
+                <Input type="number" value={settings.stats_machines || '500'} onChange={(e) => updateSetting('stats_machines', e.target.value)} placeholder="500" />
+              </div>
+              <div className="space-y-2">
+                <Label>Clients</Label>
+                <Input type="number" value={settings.stats_clients || '200'} onChange={(e) => updateSetting('stats_clients', e.target.value)} placeholder="200" />
+              </div>
+              <div className="space-y-2">
+                <Label>Countries</Label>
+                <Input type="number" value={settings.stats_countries || '10'} onChange={(e) => updateSetting('stats_countries', e.target.value)} placeholder="10" />
+              </div>
+            </div>
+          </section>
+
+          <Separator />
           <section className="space-y-4">
             <h2 className="text-lg font-semibold">Integrations</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

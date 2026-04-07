@@ -168,21 +168,30 @@ export function AdminNewsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.title_en) {
-      toast.error('English title is required');
+    // Require at least one title language
+    if (!form.title_en && !form.title_fr && !form.title_ar) {
+      toast.error('At least one title is required (EN, FR, or AR)');
+      return;
+    }
+    if (!form.content_en && !form.content_fr && !form.content_ar) {
+      toast.error('At least one content is required (EN, FR, or AR)');
       return;
     }
     setSaving(true);
     try {
+      // Generate slug from first available title
+      const titleForSlug = form.title_en || form.title_fr || form.title_ar || '';
       const slug = editItem
-        ? (form.slug || generateSlug(form.title_en))
-        : generateSlug(form.title_en);
+        ? (form.slug || generateSlug(titleForSlug))
+        : generateSlug(titleForSlug);
 
       const body = {
-        title: buildJsonField({ en: form.title_en, fr: form.title_fr, ar: form.title_ar }),
+        title: buildJsonField({ en: form.title_en || '', fr: form.title_fr || '', ar: form.title_ar || '' }),
         slug,
-        content: buildJsonField({ en: form.content_en, fr: form.content_fr, ar: form.content_ar }),
-        excerpt: buildJsonField({ en: form.excerpt_en, fr: form.excerpt_fr, ar: form.excerpt_ar }),
+        content: buildJsonField({ en: form.content_en || '', fr: form.content_fr || '', ar: form.content_ar || '' }),
+        excerpt: form.excerpt_en || form.excerpt_fr || form.excerpt_ar
+          ? buildJsonField({ en: form.excerpt_en || '', fr: form.excerpt_fr || '', ar: form.excerpt_ar || '' })
+          : null,
         coverImage: form.coverImage || null,
         author: form.author || null,
         status: form.status,

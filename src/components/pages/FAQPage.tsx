@@ -11,15 +11,6 @@ import { getTranslations } from '@/lib/i18n';
 import { getLocalizedValue } from '@/lib/helpers';
 import type { FAQ } from '@/lib/types';
 
-const DEFAULT_FAQS = [
-  { question: { en: 'What types of machines do you sell?', fr: 'Quels types de machines vendez-vous ?', ar: 'ما أنواع الآلات التي تبيعونها؟' }, answer: { en: 'We offer a wide range of industrial machines including CNC machines, lathes, milling machines, presses, welding equipment, cutting machines, and more. We also provide complete production lines for various industries.', fr: 'Nous proposons une large gamme de machines industrielles incluant des machines CNC, des tours, des fraiseuses, des presses, des équipements de soudure, des machines de découpe, et bien plus. Nous fournissons également des lignes de production complètes pour diverses industries.', ar: 'نقدم مجموعة واسعة من الآلات الصناعية بما في ذلك آلات CNC، أخراط، آلات طحن، مكابس، معدات لحام، آلات قص، والمزيد. كما نوفر خطوط إنتاج كاملة لمختلف الصناعات.' } },
-  { question: { en: 'Do you provide installation services?', fr: 'Proposez-vous des services d\'installation ?', ar: 'هل تقدمون خدمات التركيب؟' }, answer: { en: 'Yes, we provide professional installation and commissioning services for all our machines and production lines. Our team of experienced technicians will ensure everything is set up correctly and running smoothly.', fr: 'Oui, nous proposons des services d\'installation et de mise en service professionnels pour toutes nos machines et lignes de production. Notre équipe de techniciens expérimentés veillera à ce que tout soit installé correctement et fonctionne de manière optimale.', ar: 'نعم، نقدم خدمات تركيب وتشغيل احترافية لجميع آلاتنا وخطوط الإنتاج. فريقنا من الفنيين ذوي الخبرة يضمن التركيب الصحيح والتشغيل السلس.' } },
-  { question: { en: 'What warranty do you offer?', fr: 'Quelle garantie proposez-vous ?', ar: 'ما هي الضمانة التي تقدمونها؟' }, answer: { en: 'All our machines come with a manufacturer warranty. The warranty period varies by machine type and manufacturer, typically ranging from 1 to 3 years. Extended warranty options are also available.', fr: 'Toutes nos machines sont livrées avec une garantie constructeur. La période de garantie varie selon le type de machine et le fabricant, généralement entre 1 et 3 ans. Des options de garantie étendue sont également disponibles.', ar: 'جميع آلاتنا تأتي مع ضمان من الشركة المصنعة. تختلف فترة الضمان حسب نوع الآلة والشركة المصنعة، وتتراوح عادة بين 1 و 3 سنوات. تتوفر أيضا خيارات ضمان موسعة.' } },
-  { question: { en: 'Do you ship across Algeria?', fr: 'Livrez-vous dans toute l\'Algérie ?', ar: 'هل تتوصلون في جميع أنحاء الجزائر؟' }, answer: { en: 'Yes, we deliver to all wilayas across Algeria. We have established logistics partnerships to ensure safe and timely delivery of your machines and equipment.', fr: 'Oui, nous livrons dans toutes les wilayas d\'Algérie. Nous avons établi des partenariats logistiques pour garantir une livraison sûre et rapide de vos machines et équipements.', ar: 'نعم، نتوصل في جميع الولايات عبر الجزائر. لقد أقمنا شراكات لوجستية لضمان التوصيل الآمن وفي الوقت المناسب لآلاتك ومعداتك.' } },
-  { question: { en: 'How can I request a quote?', fr: 'Comment demander un devis ?', ar: 'كيف يمكنني طلب عرض سعر؟' }, answer: { en: 'You can request a quote through our website by visiting the machines section and clicking "Request a Quote", by calling us directly, by sending an email, or by using WhatsApp. Our team will respond within 24 hours with a detailed quotation.', fr: 'Vous pouvez demander un devis via notre site web en visitant la section machines et en cliquant sur "Demander un Devis", en nous appelant directement, en envoyant un email, ou en utilisant WhatsApp. Notre équipe répondra sous 24 heures avec un devis détaillé.', ar: 'يمكنك طلب عرض سعر من خلال موقعنا بزيارة قسم الآلات والنقر على "طلب عرض سعر"، أو بالاتصال بنا مباشرة، أو إرسال بريد إلكتروني، أو استخدام واتساب. سيرد فريقنا خلال 24 ساعة بعرض أسعار مفصل.' } },
-  { question: { en: 'Do you offer training for operators?', fr: 'Proposez-vous des formations pour les opérateurs ?', ar: 'هل تقدمون تدريبا للمشغلين؟' }, answer: { en: 'Yes, we offer comprehensive training programs for machine operators and maintenance technicians. Training can be conducted at our facility or on-site at your location.', fr: 'Oui, nous proposons des programmes de formation complets pour les opérateurs de machines et les techniciens de maintenance. La formation peut être dispensée dans notre installation ou sur site chez vous.', ar: 'نعم، نقدم برامج تدريب شاملة لمشغلي الآلات وفنيي الصيانة. يمكن إجراء التدريب في منشأتنا أو في موقعكم.' } },
-];
-
 export function FAQPage() {
   const { locale, setCurrentPage } = useAppStore();
   const t = getTranslations(locale);
@@ -42,8 +33,6 @@ export function FAQPage() {
     fetchData();
   }, []);
 
-  const displayFaqs = faqs.length > 0 ? faqs : DEFAULT_FAQS;
-
   return (
     <>
       <section className="bg-gradient-to-br from-primary/5 via-background to-primary/10 py-16 lg:py-20">
@@ -61,14 +50,19 @@ export function FAQPage() {
                 <Skeleton key={i} className="h-20 rounded-lg" />
               ))}
             </div>
+          ) : faqs.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">{locale === 'ar' ? 'لا توجد أسئلة شائعة حالياً' : locale === 'fr' ? 'Aucune FAQ disponible' : 'No FAQs available'}</p>
+              <p className="text-sm mt-1">{locale === 'ar' ? 'ترقبوا المزيد قريباً' : locale === 'fr' ? 'Revenez bientôt' : 'Check back soon'}</p>
+            </div>
           ) : (
             <Accordion type="single" collapsible className="space-y-3">
-              {displayFaqs.map((faq, i) => {
-                const isFromApi = 'id' in faq && 'question' in faq && typeof faq.question === 'string';
-                const question = isFromApi ? getLocalizedValue((faq as FAQ).question, locale) : faq.question[locale] || faq.question.en;
-                const answer = isFromApi ? getLocalizedValue((faq as FAQ).answer, locale) : faq.answer[locale] || faq.answer.en;
+              {faqs.map((faq, i) => {
+                const question = getLocalizedValue(faq.question, locale);
+                const answer = getLocalizedValue(faq.answer, locale);
                 return (
-                  <AccordionItem key={isFromApi ? (faq as FAQ).id : i} value={`faq-${i}`} className="border rounded-lg px-4 data-[state=open]:shadow-sm">
+                  <AccordionItem key={faq.id} value={`faq-${i}`} className="border rounded-lg px-4 data-[state=open]:shadow-sm">
                     <AccordionTrigger className="text-left text-base font-medium hover:no-underline py-4">
                       <div className="flex items-center gap-3">
                         <HelpCircle className="h-5 w-5 text-primary shrink-0" />

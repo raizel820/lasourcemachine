@@ -102,27 +102,10 @@ export function NewsPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => { setCurrentSlug(`news-${i + 1}`); setCurrentPage('news-detail'); }}>
-                  <div className="h-48 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                    <Newspaper className="h-10 w-10 text-primary/30" />
-                  </div>
-                  <CardContent className="pt-4 px-5">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                      <Calendar className="h-3 w-3" />
-                      {formatDate(new Date(), locale)}
-                    </div>
-                    <h3 className="font-semibold text-base leading-tight mb-2">
-                      {locale === 'ar' ? `خبر ${i + 1}` : locale === 'fr' ? `Nouvelle ${i + 1}` : `News ${i + 1}`}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {locale === 'ar' ? 'اقرأ آخر التطورات في عالم الآلات الصناعية' : locale === 'fr' ? 'Découvrez les dernières actualités de l\'industrie' : 'Read the latest industry developments'}
-                    </p>
-                    <span className="text-sm font-medium text-primary">{t.news.readMore} →</span>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-16 text-muted-foreground">
+              <Newspaper className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">{locale === 'ar' ? 'لا توجد أخبار حالياً' : locale === 'fr' ? 'Aucune actualité disponible' : 'No news available'}</p>
+              <p className="text-sm mt-1">{locale === 'ar' ? 'ترقبوا المزيد قريباً' : locale === 'fr' ? 'Revenez bientôt' : 'Check back soon'}</p>
             </div>
           )}
         </div>

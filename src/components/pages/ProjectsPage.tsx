@@ -100,31 +100,10 @@ export function ProjectsPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Card key={i} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => { setCurrentSlug(`project-${i + 1}`); setCurrentPage('project-detail'); }}>
-                  <div className="h-52 w-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                    <Briefcase className="h-12 w-12 text-primary/30" />
-                  </div>
-                  <CardContent className="pt-4 px-5">
-                    <h3 className="font-semibold text-lg leading-tight mb-2">
-                      {locale === 'ar' ? `مشروع ${i + 1}` : locale === 'fr' ? `Projet ${i + 1}` : `Project ${i + 1}`}
-                    </h3>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
-                      <span>{locale === 'ar' ? 'عميل' : locale === 'fr' ? 'Client' : 'Client'} {i + 1}</span>
-                      <MapPin className="h-3 w-3" />
-                      <span>{locale === 'ar' ? 'الجزائر' : locale === 'fr' ? 'Alger' : 'Algiers'}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {locale === 'ar' ? 'مشروع صناعي ناجح تم إنجازه باحترافية' : locale === 'fr' ? 'Projet industriel réussi réalisé avec professionnalisme' : 'Successfully completed industrial project'}
-                    </p>
-                    <Button size="sm" variant="outline" className="cursor-pointer">
-                      {locale === 'ar' ? 'عرض التفاصيل' : locale === 'fr' ? 'Voir Détails' : 'View Details'}
-                      <ArrowRight className="ml-1 h-3 w-3 rtl:rotate-180 rtl:ml-0 rtl:mr-1" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-16 text-muted-foreground">
+              <Briefcase className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">{locale === 'ar' ? 'لا توجد مشاريع حالياً' : locale === 'fr' ? 'Aucun projet disponible' : 'No projects available'}</p>
+              <p className="text-sm mt-1">{locale === 'ar' ? 'ترقبوا المزيد قريباً' : locale === 'fr' ? 'Revenez bientôt' : 'Check back soon'}</p>
             </div>
           )}
         </div>
