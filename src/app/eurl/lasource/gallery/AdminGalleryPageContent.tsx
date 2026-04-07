@@ -108,6 +108,11 @@ export default function AdminGalleryPage() {
 
   useEffect(() => { fetchFiles(); }, [fetchFiles]);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sourceFilter, typeFilter, searchQuery]);
+
   // Derive sources from data
   const sources = useMemo(() => {
     const s = new Set(allFiles.map(f => f.source));
