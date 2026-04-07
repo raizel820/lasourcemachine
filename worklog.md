@@ -578,3 +578,64 @@ Work Log:
 Stage Summary:
 - Gallery now correctly shows all images from machines, production lines, news, projects, services, partners, and site settings
 - Company logo displays as square with rounded corners instead of circle
+---
+Task ID: 11
+Agent: general-purpose
+Task: Fix admin page search/filter functionality (machines, categories, production lines)
+
+Work Log:
+- **Fixed AdminMachinesPage.tsx** — Search filter was hardcoded to French only (`getLocalizedValue(m.name, 'fr')`). Updated `filteredMachines` to search across all 3 locales (EN, FR, AR) using `includes()` for each.
+- **Fixed AdminCategoriesPage.tsx** — Search filter was hardcoded to French only (`getLocalizedValue(cat.name, 'fr')`). Updated `filteredCategories` to search across all 3 locales (EN, FR, AR) plus the slug field.
+- **Fixed AdminProductionLinesPage.tsx** — No search input existed at all. Added:
+  - `useState('')` for search state
+  - `filteredItems` computed array with multi-locale search (EN, FR, AR)
+  - Search `<Input>` element in the UI between header and table
+  - Changed `items.length === 0` to `filteredItems.length === 0` for empty state
+  - Changed `items.map(...)` to `filteredItems.map(...)` for table body rendering
+- Lint passes cleanly with zero errors
+
+Stage Summary:
+- Admin Machines search now matches against EN, FR, and AR names (previously FR only)
+- Admin Categories search now matches against EN, FR, AR names plus slug (previously FR + slug only)
+- Admin Production Lines now has a working search input with multi-locale support (previously none)
+- All 3 admin pages use consistent multi-locale search pattern
+---
+Task ID: 11
+Agent: general-purpose
+Task: Add search/filter functionality to admin News, Projects, and Services pages
+
+Work Log:
+- Added `const [search, setSearch] = useState('');` state to all 3 admin pages
+- Added `filteredItems` computed array before the return statement in each page, using `getLocalizedValue` for multi-locale (EN/FR/AR) title search
+- Added search `<Input>` component between header div and loading check in each page
+- Replaced `items.length === 0` and `items.map(...)` with `filteredItems` equivalents in table rendering
+- **AdminNewsPage.tsx**: Filters by title (EN/FR/AR) + author field; placeholder "Search news..."
+- **AdminProjectsPage.tsx**: Filters by title (EN/FR/AR) + client + location fields; placeholder "Search projects..."
+- **AdminServicesPage.tsx**: Filters by title (EN/FR/AR); placeholder "Search services..."
+- All Input components use `max-w-sm` class for consistent sizing
+- Lint passes cleanly with zero errors
+
+Stage Summary:
+- All 3 admin pages (News, Projects, Services) now have client-side search/filter functionality
+- Search works across all 3 languages (EN, FR, AR) using getLocalizedValue helper
+- Additional entity-specific fields included in search (author for news, client+location for projects)
+- No API changes needed — filtering is purely client-side on already-fetched data
+---
+Task ID: 12
+Agent: general-purpose
+Task: Add search/filter functionality to admin Partners page + 3 public pages (ProductionLines, News, Projects)
+
+Work Log:
+- **AdminPartnersPage.tsx**: Added `search` state, `filteredItems` computed array filtering by name and website (plain strings, no locale), search Input between header and loading check, replaced `items.length` and `items.map` with `filteredItems` equivalents
+- **ProductionLinesPage.tsx**: Added `searchQuery` state, `filteredLines` computed array filtering by localized name and shortDescription, added `Search` icon + `Input` import, styled search bar with `bg-muted/30 border` container and Search icon prefix, replaced `lines.length` and `lines.map` with `filteredLines` equivalents
+- **NewsPage.tsx**: Added `searchQuery` state, `filteredNews` computed array filtering by localized title and author, added `Search` icon + `Input` import, styled search bar, replaced `news.length` and `news.map` with `filteredNews` equivalents
+- **ProjectsPage.tsx**: Added `searchQuery` state, `filteredProjects` computed array filtering by localized title, clientName, and localized location, added `Search` icon + `Input` import, styled search bar, replaced `projects.length` and `projects.map` with `filteredProjects` equivalents
+- All 3 public pages use `t.common.search` as placeholder for i18n consistency
+- Lint passes cleanly with zero errors
+
+Stage Summary:
+- Admin Partners page now has client-side search by name and website
+- Production Lines public page now has client-side search by localized name and description
+- News public page now has client-side search by localized title and author
+- Projects public page now has client-side search by localized title, client, and location
+- No API changes needed — filtering is purely client-side on already-fetched data

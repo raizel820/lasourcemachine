@@ -121,6 +121,7 @@ export function AdminServicesPage() {
   const [editItem, setEditItem] = useState<ServiceItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<ServiceItem | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [search, setSearch] = useState('');
 
   const fetchData = async () => {
     try {
@@ -231,6 +232,15 @@ export function AdminServicesPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const filteredItems = items.filter((item) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const titleEn = getLocalizedValue(item.title, 'en').toLowerCase();
+    const titleFr = getLocalizedValue(item.title, 'fr').toLowerCase();
+    const titleAr = getLocalizedValue(item.title, 'ar').toLowerCase();
+    return titleEn.includes(q) || titleFr.includes(q) || titleAr.includes(q);
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -242,6 +252,13 @@ export function AdminServicesPage() {
           <Plus className="mr-2 h-4 w-4" /> Add Service
         </Button>
       </div>
+
+      <Input
+        placeholder="Search services..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -261,14 +278,14 @@ export function AdminServicesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       No services found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  items.map((item) => (
+                  filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
                         <Badge variant="outline">{item.icon || '-'}</Badge>

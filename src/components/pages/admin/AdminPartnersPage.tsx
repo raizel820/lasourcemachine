@@ -65,6 +65,7 @@ export function AdminPartnersPage() {
   const [editItem, setEditItem] = useState<Partner | null>(null);
   const [deleteItem, setDeleteItem] = useState<Partner | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [search, setSearch] = useState('');
 
   const fetchData = async () => {
     try {
@@ -158,6 +159,12 @@ export function AdminPartnersPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const filteredItems = items.filter((item) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return item.name.toLowerCase().includes(q) || (item.website || '').toLowerCase().includes(q);
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -169,6 +176,13 @@ export function AdminPartnersPage() {
           <Plus className="mr-2 h-4 w-4" /> Add Partner
         </Button>
       </div>
+
+      <Input
+        placeholder="Search partners..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -188,14 +202,14 @@ export function AdminPartnersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       No partners found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  items.map((item) => (
+                  filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
                         {item.logo ? (

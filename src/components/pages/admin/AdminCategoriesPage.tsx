@@ -204,9 +204,12 @@ export function AdminCategoriesPage() {
 
   const filteredCategories = categories.filter((cat) => {
     if (!search) return true;
-    const name = getLocalizedValue(cat.name, 'fr').toLowerCase();
+    const q = search.toLowerCase();
+    const nameEn = getLocalizedValue(cat.name, 'en').toLowerCase();
+    const nameFr = getLocalizedValue(cat.name, 'fr').toLowerCase();
+    const nameAr = getLocalizedValue(cat.name, 'ar').toLowerCase();
     const slug = cat.slug.toLowerCase();
-    return name.includes(search.toLowerCase()) || slug.includes(search.toLowerCase());
+    return nameEn.includes(q) || nameFr.includes(q) || nameAr.includes(q) || slug.includes(q);
   });
 
   return (

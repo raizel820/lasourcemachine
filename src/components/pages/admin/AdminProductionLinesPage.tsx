@@ -130,6 +130,7 @@ export function AdminProductionLinesPage() {
   const [editItem, setEditItem] = useState<ProductionLine | null>(null);
   const [deleteItem, setDeleteItem] = useState<ProductionLine | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [search, setSearch] = useState('');
 
   const fetchData = async () => {
     try {
@@ -269,6 +270,15 @@ export function AdminProductionLinesPage() {
     }));
   };
 
+  const filteredItems = items.filter((item) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const nameEn = getLocalizedValue(item.name, 'en').toLowerCase();
+    const nameFr = getLocalizedValue(item.name, 'fr').toLowerCase();
+    const nameAr = getLocalizedValue(item.name, 'ar').toLowerCase();
+    return nameEn.includes(q) || nameFr.includes(q) || nameAr.includes(q);
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -280,6 +290,13 @@ export function AdminProductionLinesPage() {
           <Plus className="mr-2 h-4 w-4" /> Add Production Line
         </Button>
       </div>
+
+      <Input
+        placeholder="Search production lines..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -299,14 +316,14 @@ export function AdminProductionLinesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                       No production lines found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  items.map((item) => (
+                  filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
                         {getLocalizedValue(item.name, 'fr')}

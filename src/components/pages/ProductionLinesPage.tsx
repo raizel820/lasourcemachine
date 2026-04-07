@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Factory, Eye } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Factory, Eye, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppStore } from '@/lib/store';
 import { getTranslations } from '@/lib/i18n';
@@ -16,6 +17,7 @@ export function ProductionLinesPage() {
   const t = getTranslations(locale);
   const [lines, setLines] = useState<ProductionLine[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     async function fetchData() {
@@ -32,6 +34,14 @@ export function ProductionLinesPage() {
     }
     fetchData();
   }, []);
+
+  const filteredLines = lines.filter((line) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const name = getLocalizedValue(line.name, locale).toLowerCase();
+    const desc = line.shortDescription ? getLocalizedValue(line.shortDescription, locale).toLowerCase() : '';
+    return name.includes(q) || desc.includes(q);
+  });
 
   const handleViewDetail = (line: ProductionLine) => {
     setCurrentSlug(line.slug);
@@ -62,15 +72,28 @@ export function ProductionLinesPage() {
 
       <section className="py-12">
         <div className="container mx-auto px-4">
+          {/* Search Bar */}
+          <div className="mb-8 p-4 rounded-xl bg-muted/30 border">
+            <div className="relative max-w-sm">
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t.common.search}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="ps-10"
+              />
+            </div>
+          </div>
+
           {loading ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-80 rounded-xl" />
               ))}
             </div>
-          ) : lines.length > 0 ? (
+          ) : filteredLines.length > 0 ? (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {lines.map((line) => (
+              {filteredLines.map((line) => (
                 <Card key={line.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer" onClick={() => handleViewDetail(line)}>
                   <div className="relative overflow-hidden rounded-t-xl">
                     {(() => {

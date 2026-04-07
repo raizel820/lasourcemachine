@@ -362,8 +362,11 @@ export function AdminMachinesPage() {
 
   const filteredMachines = machines.filter((m) => {
     if (!search) return true;
-    const name = getLocalizedValue(m.name, 'fr').toLowerCase();
-    return name.includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const nameEn = getLocalizedValue(m.name, 'en').toLowerCase();
+    const nameFr = getLocalizedValue(m.name, 'fr').toLowerCase();
+    const nameAr = getLocalizedValue(m.name, 'ar').toLowerCase();
+    return nameEn.includes(q) || nameFr.includes(q) || nameAr.includes(q);
   });
 
   const updateForm = (key: keyof FormData, value: string | boolean | number | SpecItem[]) => {

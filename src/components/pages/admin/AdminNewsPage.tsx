@@ -123,6 +123,7 @@ export function AdminNewsPage() {
   const [editItem, setEditItem] = useState<NewsPost | null>(null);
   const [deleteItem, setDeleteItem] = useState<NewsPost | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [search, setSearch] = useState('');
 
   const fetchData = async () => {
     try {
@@ -256,6 +257,16 @@ export function AdminNewsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const filteredItems = items.filter((item) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const titleEn = getLocalizedValue(item.title, 'en').toLowerCase();
+    const titleFr = getLocalizedValue(item.title, 'fr').toLowerCase();
+    const titleAr = getLocalizedValue(item.title, 'ar').toLowerCase();
+    const author = (item.author || '').toLowerCase();
+    return titleEn.includes(q) || titleFr.includes(q) || titleAr.includes(q) || author.includes(q);
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -267,6 +278,13 @@ export function AdminNewsPage() {
           <Plus className="mr-2 h-4 w-4" /> Add Post
         </Button>
       </div>
+
+      <Input
+        placeholder="Search news..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -287,14 +305,14 @@ export function AdminNewsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No news posts found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  items.map((item) => (
+                  filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
                         {item.coverImage ? (

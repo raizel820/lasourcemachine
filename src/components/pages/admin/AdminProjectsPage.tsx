@@ -125,6 +125,7 @@ export function AdminProjectsPage() {
   const [editItem, setEditItem] = useState<Project | null>(null);
   const [deleteItem, setDeleteItem] = useState<Project | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
+  const [search, setSearch] = useState('');
 
   const fetchData = async () => {
     try {
@@ -249,6 +250,17 @@ export function AdminProjectsPage() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const filteredItems = items.filter((item) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const titleEn = getLocalizedValue(item.title, 'en').toLowerCase();
+    const titleFr = getLocalizedValue(item.title, 'fr').toLowerCase();
+    const titleAr = getLocalizedValue(item.title, 'ar').toLowerCase();
+    const client = (item.client || '').toLowerCase();
+    const location = (item.location || '').toLowerCase();
+    return titleEn.includes(q) || titleFr.includes(q) || titleAr.includes(q) || client.includes(q) || location.includes(q);
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -260,6 +272,13 @@ export function AdminProjectsPage() {
           <Plus className="mr-2 h-4 w-4" /> Add Project
         </Button>
       </div>
+
+      <Input
+        placeholder="Search projects..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="max-w-sm"
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -280,14 +299,14 @@ export function AdminProjectsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No projects found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  items.map((item) => (
+                  filteredItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
                         {getLocalizedValue(item.title, 'fr')}
