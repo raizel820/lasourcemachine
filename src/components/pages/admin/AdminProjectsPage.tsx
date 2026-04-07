@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '@/components/ui/image-upload';
+import { ImageGalleryUpload } from '@/components/ui/image-gallery-upload';
 import { getLocalizedValue } from '@/lib/helpers';
 import { generateSlug } from '@/lib/helpers';
 
@@ -73,7 +75,7 @@ interface FormData {
   content_ar: string;
   slug: string;
   coverImage: string;
-  images: string;
+  images: string[];
   client: string;
   location: string;
   date: string;
@@ -93,7 +95,7 @@ const emptyForm: FormData = {
   content_ar: '',
   slug: '',
   coverImage: '',
-  images: '',
+  images: [],
   client: '',
   location: '',
   date: '',
@@ -164,7 +166,7 @@ export function AdminProjectsPage() {
       slug: item.slug,
       coverImage: item.coverImage || '',
       images: (() => {
-        try { return JSON.parse(item.images || '[]').join(', '); } catch { return ''; }
+        try { return JSON.parse(item.images || '[]'); } catch { return []; }
       })(),
       client: item.client || '',
       location: item.location || '',
@@ -192,7 +194,7 @@ export function AdminProjectsPage() {
         description: buildJsonField({ en: form.description_en, fr: form.description_fr, ar: form.description_ar }),
         content: buildJsonField({ en: form.content_en, fr: form.content_fr, ar: form.content_ar }),
         coverImage: form.coverImage || null,
-        images: JSON.stringify(form.images.split(',').map((s) => s.trim()).filter(Boolean)),
+        images: JSON.stringify(form.images),
         client: form.client || null,
         location: form.location || null,
         date: form.date || null,
@@ -404,15 +406,21 @@ export function AdminProjectsPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Images (comma-separated URLs)</Label>
-                <Textarea value={form.images} onChange={(e) => updateForm('images', e.target.value)} placeholder="https://example.com/image1.jpg, ..." rows={2} />
-              </div>
+              <ImageGalleryUpload
+                images={form.images}
+                onChange={(urls) => updateForm('images', urls)}
+                label="Gallery Images"
+                folder="projects"
+              />
 
-              <div className="space-y-2">
-                <Label>Cover Image URL</Label>
-                <Input value={form.coverImage} onChange={(e) => updateForm('coverImage', e.target.value)} placeholder="https://example.com/cover.jpg" />
-              </div>
+              <ImageUpload
+                value={form.coverImage}
+                onChange={(url) => updateForm('coverImage', url)}
+                label="Cover Image"
+                placeholder="Upload or paste cover image URL"
+                folder="projects"
+                previewClassName="h-32 w-full"
+              />
 
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setShowForm(false)} className="cursor-pointer">Cancel</Button>

@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '@/components/ui/image-upload';
+import { ImageGalleryUpload } from '@/components/ui/image-gallery-upload';
 import { getLocalizedValue } from '@/lib/helpers';
 import { generateSlug } from '@/lib/helpers';
 
@@ -73,6 +75,7 @@ interface FormData {
   excerpt_ar: string;
   slug: string;
   coverImage: string;
+  images: string[];
   author: string;
   status: string;
   publishedAt: string;
@@ -91,6 +94,7 @@ const emptyForm: FormData = {
   excerpt_ar: '',
   slug: '',
   coverImage: '',
+  images: [],
   author: '',
   status: 'draft',
   publishedAt: new Date().toISOString().split('T')[0],
@@ -159,6 +163,9 @@ export function AdminNewsPage() {
       excerpt_ar: excerpt.ar || '',
       slug: item.slug,
       coverImage: item.coverImage || '',
+      images: (() => {
+        try { return JSON.parse(item.images || '[]'); } catch { return []; }
+      })(),
       author: item.author || '',
       status: item.status,
       publishedAt: item.publishedAt ? new Date(item.publishedAt).toISOString().split('T')[0] : '',
@@ -193,6 +200,7 @@ export function AdminNewsPage() {
           ? buildJsonField({ en: form.excerpt_en || '', fr: form.excerpt_fr || '', ar: form.excerpt_ar || '' })
           : null,
         coverImage: form.coverImage || null,
+        images: JSON.stringify(form.images),
         author: form.author || null,
         status: form.status,
         publishedAt: form.publishedAt || null,
@@ -394,10 +402,26 @@ export function AdminNewsPage() {
                 </div>
               </div>
 
+              <ImageUpload
+                value={form.coverImage}
+                onChange={(url) => updateForm('coverImage', url)}
+                label="Cover Image"
+                placeholder="Upload or paste cover image URL"
+                folder="news"
+                previewClassName="h-36 w-full"
+              />
+
+              <ImageGalleryUpload
+                images={form.images}
+                onChange={(urls) => updateForm('images', urls)}
+                label="Additional Images"
+                folder="news"
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Cover Image URL</Label>
-                  <Input value={form.coverImage} onChange={(e) => updateForm('coverImage', e.target.value)} placeholder="https://example.com/cover.jpg" />
+                  <Label>Author</Label>
+                  <Input value={form.author} onChange={(e) => updateForm('author', e.target.value)} placeholder="Author name" />
                 </div>
                 <div className="space-y-2">
                   <Label>Published At</Label>

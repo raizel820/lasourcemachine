@@ -116,7 +116,18 @@ export function Navbar() {
             onClick={() => handleNavigate('home')}
             className="flex items-center gap-2 shrink-0 cursor-pointer"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            {site.companyLogo && !site.companyLogo.includes('placeholder') ? (
+              <img
+                src={site.companyLogo}
+                alt={companyName}
+                className="h-10 w-10 rounded-lg object-contain bg-primary"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground', site.companyLogo && !site.companyLogo.includes('placeholder') && 'hidden')}>
               <Factory className="h-5 w-5" />
             </div>
             <div className="hidden sm:block">
@@ -223,7 +234,18 @@ export function Navbar() {
         >
           <SheetHeader className="mb-6">
             <SheetTitle className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              {site.companyLogo && !site.companyLogo.includes('placeholder') ? (
+                <img
+                  src={site.companyLogo}
+                  alt={companyName}
+                  className="h-9 w-9 rounded-lg object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground', site.companyLogo && !site.companyLogo.includes('placeholder') && 'hidden')}>
                 <Factory className="h-4 w-4" />
               </div>
               <span>{companyName}</span>

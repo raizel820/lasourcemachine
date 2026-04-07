@@ -31,6 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '@/components/ui/image-upload';
 
 const ADMIN_HEADERS = { Authorization: 'Bearer admin-token' };
 
@@ -246,15 +247,14 @@ export function AdminPartnersPage() {
               <Label>Name</Label>
               <Input value={form.name} onChange={(e) => updateForm('name', e.target.value)} placeholder="Partner name" />
             </div>
-            <div className="space-y-2">
-              <Label>Logo URL</Label>
-              <Input value={form.logo} onChange={(e) => updateForm('logo', e.target.value)} placeholder="https://example.com/logo.png" />
-              {form.logo && (
-                <div className="mt-2">
-                  <img src={form.logo} alt="Logo preview" className="h-16 w-24 rounded border object-contain bg-white p-1" />
-                </div>
-              )}
-            </div>
+            <ImageUpload
+              value={form.logo}
+              onChange={(url) => updateForm('logo', url)}
+              label="Logo"
+              placeholder="Upload partner logo"
+              folder="partners"
+              previewClassName="h-20 w-28"
+            />
             <div className="space-y-2">
               <Label>Website URL</Label>
               <Input value={form.website} onChange={(e) => updateForm('website', e.target.value)} placeholder="https://example.com" />

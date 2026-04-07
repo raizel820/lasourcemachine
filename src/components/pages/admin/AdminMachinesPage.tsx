@@ -42,6 +42,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '@/components/ui/image-upload';
+import { ImageGalleryUpload } from '@/components/ui/image-gallery-upload';
 import { getLocalizedValue } from '@/lib/helpers';
 import { generateSlug } from '@/lib/helpers';
 
@@ -89,8 +91,9 @@ interface FormData {
   capacity: string;
   basePrice: string;
   currency: string;
-  images: string;
+  images: string[];
   coverImage: string;
+  pdfUrl: string;
   status: string;
   featured: boolean;
   order: number;
@@ -112,8 +115,9 @@ const emptyForm: FormData = {
   capacity: '',
   basePrice: '',
   currency: 'DZD',
-  images: '',
+  images: [],
   coverImage: '',
+  pdfUrl: '',
   status: 'draft',
   featured: false,
   order: 0,
@@ -195,9 +199,12 @@ export function AdminMachinesPage() {
       basePrice: item.basePrice ? String(item.basePrice) : '',
       currency: item.currency,
       images: (() => {
-        try { return JSON.parse(item.images || '[]').join(', '); } catch { return ''; }
+        try { return JSON.parse(item.images || '[]'); } catch { return []; }
       })(),
       coverImage: item.coverImage || '',
+      pdfUrl: (() => {
+        try { return item.pdfUrl || ''; } catch { return ''; }
+      })(),
       status: item.status,
       featured: item.featured,
       order: item.order,
@@ -226,8 +233,9 @@ export function AdminMachinesPage() {
         capacity: form.capacity || null,
         basePrice: form.basePrice ? parseFloat(form.basePrice) : null,
         currency: form.currency,
-        images: JSON.stringify(form.images.split(',').map((s) => s.trim()).filter(Boolean)),
+        images: JSON.stringify(form.images),
         coverImage: form.coverImage || null,
+        pdfUrl: form.pdfUrl || null,
         status: form.status,
         featured: form.featured,
         order: form.order,
@@ -537,15 +545,35 @@ export function AdminMachinesPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Images (comma-separated URLs)</Label>
-                <Textarea value={form.images} onChange={(e) => updateForm('images', e.target.value)} placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg" rows={2} />
-              </div>
+              <ImageGalleryUpload
+                images={form.images}
+                onChange={(urls) => updateForm('images', urls)}
+                label="Gallery Images"
+                folder="machines"
+              />
 
-              <div className="space-y-2">
-                <Label>Cover Image URL</Label>
-                <Input value={form.coverImage} onChange={(e) => updateForm('coverImage', e.target.value)} placeholder="https://example.com/cover.jpg" />
-              </div>
+              <ImageUpload
+                value={form.coverImage}
+                onChange={(url) => updateForm('coverImage', url)}
+                label="Cover Image"
+                placeholder="Upload or paste cover image URL"
+                folder="machines"
+                previewClassName="h-32 w-full"
+              />
+
+              <ImageUpload
+                value={form.pdfUrl}
+                onChange={(url) => updateForm('pdfUrl', url)}
+                label="PDF Catalog (Optional)"
+                placeholder="Upload or paste PDF URL"
+                folder="documents"
+                accept="application/pdf"
+              />
+              {form.pdfUrl && (
+                <a href={form.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                  View PDF Catalog
+                </a>
+              )}
 
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">

@@ -297,3 +297,31 @@ Stage Summary:
 - Cross-tab updates work: saving in admin tab, then switching to homepage tab triggers re-fetch via visibilitychange
 - Admin settings inputs show actual DB values, not hardcoded defaults
 - Lint passes cleanly, dev server compiles with no errors
+---
+Task ID: 1
+Agent: Main Agent
+Task: Add image upload system and company branding section to admin panel, update all entities to support file upload
+
+Work Log:
+- Created real file upload API at `/api/upload` that saves files to `public/uploads/` with folder organization
+- Created reusable `ImageUpload` component (single image with upload/URL toggle and preview)
+- Created reusable `ImageGalleryUpload` component (multi-image grid with reorder, upload, URL add, delete)
+- Updated Admin Settings page: added Company Branding section with logo, favicon uploads; OG image now uses ImageUpload
+- Updated Admin Machines page: gallery images use ImageGalleryUpload, cover uses ImageUpload, added PDF upload support
+- Updated Admin Production Lines page: gallery and cover images now use upload components
+- Updated Admin News page: cover image and additional images now use upload components
+- Updated Admin Partners page: logo now uses ImageUpload with preview
+- Updated Admin Services page: added service image field with ImageUpload component
+- Updated Admin Projects page: gallery and cover images now use upload components
+- Updated `useSiteSettings` hook: added `companyLogo`, `companyFavicon`, `instagram`, `youtube`, `twitter` accessors
+- Updated Navbar (desktop + mobile): renders uploaded company logo when available, falls back to Factory icon
+- Updated Footer: renders uploaded company logo when available, falls back to Factory icon
+- Upload API supports DELETE for cleanup, subfolder organization, file validation (size, type)
+
+Stage Summary:
+- Full image upload system operational with `public/uploads/` storage
+- All 6 entity types (machines, production lines, news, projects, services, partners) now support file upload
+- Admin settings now has a Company Branding section for logo, favicon, and OG image uploads
+- Navbar and Footer dynamically render the uploaded company logo
+- Lint passes clean, dev server compiles successfully
+- No breaking changes to existing URL-based image fields (backward compatible)

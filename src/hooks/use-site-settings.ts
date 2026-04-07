@@ -194,11 +194,16 @@ export function useSiteSettings() {
     website: settings?.company_website || COMPANY.website,
     facebook: settings?.social_facebook || COMPANY.facebook,
     linkedin: settings?.social_linkedin || COMPANY.linkedin,
+    instagram: settings?.social_instagram || '',
+    youtube: settings?.social_youtube || '',
+    twitter: settings?.social_twitter || '',
     companyName,
     description,
     workingHours,
     seoTitle,
     seoDescription,
     seoOgImage: settings?.seo_og_image || '',
+    companyLogo: settings?.company_logo || '/logo.svg',
+    companyFavicon: settings?.company_favicon || '/favicon.ico',
   };
 }

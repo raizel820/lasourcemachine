@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { getLocalizedValue } from '@/lib/helpers';
 
 const ADMIN_HEADERS = { Authorization: 'Bearer admin-token' };
@@ -77,6 +78,7 @@ interface FormData {
   features_en: string;
   features_fr: string;
   features_ar: string;
+  image: string;
   status: string;
   order: number;
 }
@@ -92,6 +94,7 @@ const emptyForm: FormData = {
   features_en: '',
   features_fr: '',
   features_ar: '',
+  image: '',
   status: 'draft',
   order: 0,
 };
@@ -154,6 +157,7 @@ export function AdminServicesPage() {
       description_fr: description.fr || '',
       description_ar: description.ar || '',
       icon: item.icon || '',
+      image: item.image || '',
       features_en: features.en || '',
       features_fr: features.fr || '',
       features_ar: features.ar || '',
@@ -175,6 +179,7 @@ export function AdminServicesPage() {
         description: buildJsonField({ en: form.description_en, fr: form.description_fr, ar: form.description_ar }),
         icon: form.icon || null,
         features: buildJsonField({ en: form.features_en, fr: form.features_fr, ar: form.features_ar }),
+        image: form.image || null,
         status: form.status,
         order: form.order,
       };
@@ -362,6 +367,15 @@ export function AdminServicesPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              <ImageUpload
+                value={form.image}
+                onChange={(url) => updateForm('image', url)}
+                label="Service Image (Optional)"
+                placeholder="Upload or paste service image URL"
+                folder="services"
+                previewClassName="h-32 w-full"
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-0">

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { invalidateSettingsCache } from '@/hooks/use-site-settings';
 
 const ADMIN_HEADERS = { Authorization: 'Bearer admin-token' };
@@ -30,6 +31,8 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   company_whatsapp: '+213 555 123 456',
   company_address: 'Zone Industrielle, Rouiba, Alger, Algeria',
   company_website: 'https://www.lasourcemachien.dz',
+  company_logo: '',
+  company_favicon: '',
   social_facebook: 'https://www.facebook.com/lasourcemachien',
   social_linkedin: 'https://www.linkedin.com/company/lasourcemachien',
   social_instagram: '',
@@ -37,7 +40,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   social_twitter: '',
   working_hours_en: 'Sunday - Thursday: 8:00 AM - 5:00 PM',
   working_hours_fr: 'Dimanche - Jeudi : 8h00 - 17h00',
-  working_hours_ar: 'الأحد – الخميس: 8:00 ص – 5:00 م',
+  working_hours_ar: '\u0627\u0644\u0623\u062d\u062f \u2013 \u0627\u0644\u062e\u0645\u064a\u0633: 8:00 \u0635 \u2013 5:00 \u0645',
   seo_title_en: '',
   seo_title_fr: '',
   seo_title_ar: '',
@@ -127,6 +130,34 @@ export function AdminSettingsPage() {
       <ScrollArea className="max-h-[calc(100vh-200px)]">
         <div className="space-y-8 pr-4 pb-8">
 
+          {/* Company Branding & Images */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">Company Branding</h2>
+            <p className="text-sm text-muted-foreground">Upload your company logo, favicon, and brand assets. These will be used across the website.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ImageUpload
+                value={settings.company_logo || ''}
+                onChange={(url) => updateSetting('company_logo', url)}
+                label="Company Logo"
+                placeholder="Upload your company logo"
+                folder="branding"
+                previewClassName="h-28 w-full"
+              />
+
+              <ImageUpload
+                value={settings.company_favicon || ''}
+                onChange={(url) => updateSetting('company_favicon', url)}
+                label="Favicon"
+                placeholder="Upload your favicon (32x32 or 64x64)"
+                folder="branding"
+                previewClassName="h-16 w-16"
+              />
+            </div>
+          </section>
+
+          <Separator />
+
           {/* Company Information */}
           <section className="space-y-4">
             <h2 className="text-lg font-semibold">Company Information</h2>
@@ -139,7 +170,7 @@ export function AdminSettingsPage() {
                   <TabsTrigger value="ar">AR</TabsTrigger>
                 </TabsList>
                 <TabsContent value="fr">
-                  <Input value={settings.company_name_fr || ''} onChange={(e) => updateSetting('company_name_fr', e.target.value)} placeholder="Nom de l'entreprise" />
+                  <Input value={settings.company_name_fr || ''} onChange={(e) => updateSetting('company_name_fr', e.target.value)} placeholder="Nom de l&apos;entreprise" />
                 </TabsContent>
                 <TabsContent value="en">
                   <Input value={settings.company_name_en || ''} onChange={(e) => updateSetting('company_name_en', e.target.value)} placeholder="Company name" />
@@ -294,10 +325,14 @@ export function AdminSettingsPage() {
               </Tabs>
             </div>
 
-            <div className="space-y-2">
-              <Label>OG Image URL</Label>
-              <Input value={settings.seo_og_image || ''} onChange={(e) => updateSetting('seo_og_image', e.target.value)} placeholder="https://example.com/og-image.jpg" />
-            </div>
+            <ImageUpload
+              value={settings.seo_og_image || ''}
+              onChange={(url) => updateSetting('seo_og_image', url)}
+              label="OG Image (Open Graph)"
+              placeholder="Upload OG image for social sharing (1200x630 recommended)"
+              folder="seo"
+              previewClassName="h-32 w-56"
+            />
           </section>
 
           <Separator />

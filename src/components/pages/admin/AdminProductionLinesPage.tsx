@@ -43,6 +43,8 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ImageUpload } from '@/components/ui/image-upload';
+import { ImageGalleryUpload } from '@/components/ui/image-gallery-upload';
 import { getLocalizedValue } from '@/lib/helpers';
 import { generateSlug } from '@/lib/helpers';
 
@@ -78,7 +80,7 @@ interface FormData {
   shortDesc_fr: string;
   shortDesc_ar: string;
   slug: string;
-  images: string;
+  images: string[];
   coverImage: string;
   status: string;
   featured: boolean;
@@ -97,7 +99,7 @@ const emptyForm: FormData = {
   shortDesc_fr: '',
   shortDesc_ar: '',
   slug: '',
-  images: '',
+  images: [],
   coverImage: '',
   status: 'draft',
   featured: false,
@@ -175,7 +177,7 @@ export function AdminProductionLinesPage() {
       shortDesc_ar: shortDesc.ar || '',
       slug: item.slug,
       images: (() => {
-        try { return JSON.parse(item.images || '[]').join(', '); } catch { return ''; }
+        try { return JSON.parse(item.images || '[]'); } catch { return []; }
       })(),
       coverImage: item.coverImage || '',
       status: item.status,
@@ -202,7 +204,7 @@ export function AdminProductionLinesPage() {
         slug,
         description: buildJsonField({ en: form.description_en, fr: form.description_fr, ar: form.description_ar }),
         shortDesc: buildJsonField({ en: form.shortDesc_en, fr: form.shortDesc_fr, ar: form.shortDesc_ar }),
-        images: JSON.stringify(form.images.split(',').map((s) => s.trim()).filter(Boolean)),
+        images: JSON.stringify(form.images),
         coverImage: form.coverImage || null,
         status: form.status,
         featured: form.featured,
@@ -398,15 +400,21 @@ export function AdminProductionLinesPage() {
                 <Input value={form.slug} onChange={(e) => updateForm('slug', e.target.value)} placeholder="production-line-slug" />
               </div>
 
-              <div className="space-y-2">
-                <Label>Images (comma-separated URLs)</Label>
-                <Textarea value={form.images} onChange={(e) => updateForm('images', e.target.value)} placeholder="https://example.com/image1.jpg, ..." rows={2} />
-              </div>
+              <ImageGalleryUpload
+                images={form.images}
+                onChange={(urls) => updateForm('images', urls)}
+                label="Gallery Images"
+                folder="production-lines"
+              />
 
-              <div className="space-y-2">
-                <Label>Cover Image URL</Label>
-                <Input value={form.coverImage} onChange={(e) => updateForm('coverImage', e.target.value)} placeholder="https://example.com/cover.jpg" />
-              </div>
+              <ImageUpload
+                value={form.coverImage}
+                onChange={(url) => updateForm('coverImage', url)}
+                label="Cover Image"
+                placeholder="Upload or paste cover image URL"
+                folder="production-lines"
+                previewClassName="h-32 w-full"
+              />
 
               {/* Machine Selection */}
               <div className="space-y-2">
