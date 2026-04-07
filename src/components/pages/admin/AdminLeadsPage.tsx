@@ -66,25 +66,24 @@ const STATUS_COLORS: Record<string, 'default' | 'secondary' | 'destructive' | 'o
 };
 
 export function AdminLeadsPage() {
-  const [items, setItems] = useState<LeadItem[]>([]);
+  const [allItems, setAllItems] = useState<LeadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedLead, setSelectedLead] = useState<LeadItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<LeadItem | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
+  const filteredItems = allItems.filter(item => {
+    if (statusFilter && statusFilter !== 'all' && item.status !== statusFilter) return false;
+    return true;
+  });
+
   const fetchData = async () => {
     try {
-      const params = new URLSearchParams();
-      if (statusFilter && statusFilter !== 'all') {
-        params.set('status', statusFilter);
-      }
-      params.set('limit', '100');
-      const url = `/api/leads?${params.toString()}`;
-      const res = await fetch(url, { headers: ADMIN_HEADERS });
+      const res = await fetch('/api/leads?limit=100', { headers: ADMIN_HEADERS });
       if (res.ok) {
         const data = await res.json();
-        setItems(data.data || []);
+        setAllItems(data.data || []);
       }
     } catch {
       toast.error('Failed to fetch leads');
@@ -93,7 +92,7 @@ export function AdminLeadsPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [statusFilter]);
+  useEffect(() => { fetchData(); }, []);
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     setUpdatingStatus(leadId);
@@ -178,14 +177,14 @@ export function AdminLeadsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.length === 0 ? (
+                {filteredItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       No leads found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  items.map((lead) => (
+                  filteredItems.map((lead) => (
                     <TableRow key={lead.id}>
                       <TableCell className="font-medium">{lead.name}</TableCell>
                       <TableCell>

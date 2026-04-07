@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   ImageIcon, FileText, Trash2, Upload, Search, FolderOpen,
   Filter, X, CheckSquare, Square, ChevronLeft, ChevronRight,
@@ -70,10 +70,8 @@ const SOURCE_COLORS: Record<string, string> = {
 const ITEMS_PER_PAGE = 24;
 
 export default function AdminGalleryPage() {
-  const [files, setFiles] = useState<GalleryFile[]>([]);
+  const [allFiles, setAllFiles] = useState<GalleryFile[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
-  const [sources, setSources] = useState<string[]>([]);
-  const [stats, setStats] = useState<GalleryStats>({ total: 0, images: 0, documents: 0, totalSize: '0 B' });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState('all');
@@ -93,33 +91,56 @@ export default function AdminGalleryPage() {
   const fetchFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (sourceFilter && sourceFilter !== 'all') params.set('source', sourceFilter);
-      if (typeFilter && typeFilter !== 'all') params.set('type', typeFilter);
-      if (searchQuery) params.set('search', searchQuery);
-
-      const res = await fetch(`/api/gallery?${params.toString()}`, {
+      const res = await fetch('/api/gallery', {
         headers: { 'Authorization': 'Bearer admin-token' },
       });
       if (res.ok) {
         const data = await res.json();
-        setFiles(data.data || []);
+        setAllFiles(data.data || []);
         setFolders(data.folders || []);
-        setSources(data.sources || []);
-        setStats(data.stats || { total: 0, images: 0, documents: 0, totalSize: '0 B' });
       }
     } catch (err) {
       console.error('Failed to fetch gallery:', err);
     } finally {
       setLoading(false);
     }
-  }, [sourceFilter, typeFilter, searchQuery]);
+  }, []);
 
-  useEffect(() => {
-    fetchFiles();
-    setCurrentPage(1);
-    setSelectedFiles(new Set());
-  }, [fetchFiles]);
+  useEffect(() => { fetchFiles(); }, [fetchFiles]);
+
+  // Derive sources from data
+  const sources = useMemo(() => {
+    const s = new Set(allFiles.map(f => f.source));
+    return Array.from(s);
+  }, [allFiles]);
+
+  // Client-side filtering
+  const files = useMemo(() => {
+    return allFiles.filter(f => {
+      if (sourceFilter && sourceFilter !== 'all' && f.source !== sourceFilter) return false;
+      if (typeFilter && typeFilter !== 'all' && f.type !== typeFilter) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!f.fileName.toLowerCase().includes(q) && !f.sourceLabel.toLowerCase().includes(q) && !f.url.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [allFiles, sourceFilter, typeFilter, searchQuery]);
+
+  // Stats from all data
+  const stats = useMemo(() => {
+    const sourceCounts: Record<string, number> = {};
+    for (const f of allFiles) sourceCounts[f.source] = (sourceCounts[f.source] || 0) + 1;
+    return {
+      total: allFiles.length,
+      images: allFiles.filter(f => f.type === 'image').length,
+      documents: allFiles.filter(f => f.type === 'document').length,
+      totalSize: allFiles.filter(f => f.source === 'disk').reduce((sum, f) => sum + f.size, 0) > 0
+        ? `${(allFiles.filter(f => f.source === 'disk').reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(1)} MB`
+        : '0 B',
+      sourceCounts,
+    };
+  }, [allFiles]);
 
   const totalPages = Math.ceil(files.length / ITEMS_PER_PAGE);
   const paginatedFiles = files.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);

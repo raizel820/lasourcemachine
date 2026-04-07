@@ -639,3 +639,27 @@ Stage Summary:
 - News public page now has client-side search by localized title and author
 - Projects public page now has client-side search by localized title, client, and location
 - No API changes needed — filtering is purely client-side on already-fetched data
+
+---
+Task ID: 12
+Agent: main-agent
+Task: Fix all filter issues across the app (gallery, leads, machines category)
+
+Work Log:
+- Diagnosed root cause: Gallery and Leads pages used server-side filtering via API query params which could be unreliable due to fetch chain complexity and potential caching
+- Converted Gallery page from server-side filtering to client-side filtering:
+  - Fetch ALL files once (no filter params)
+  - Added useMemo for client-side filtering (source, type, search)
+  - Derived `sources` list from data instead of API response
+  - Computed `stats` locally from allFiles instead of from API
+- Converted Leads page from server-side filtering to client-side filtering:
+  - Fetch all leads once
+  - Filter by status in client-side computed `filteredItems`
+- Fixed Machines page category filter (previous fix): changed useAppStore.getState() to proper hook destructure
+
+Stage Summary:
+- All filters now use reliable client-side filtering pattern (same as admin CRUD pages)
+- Gallery: source filter, type filter, and search all work instantly
+- Leads: status filter works instantly
+- Machines: category filter badges work correctly
+- All admin pages: search filters work with multi-locale support
