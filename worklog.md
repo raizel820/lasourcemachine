@@ -376,3 +376,30 @@ Stage Summary:
 - PDF catalog download button enhanced with better styling and icon
 - Specs section shows proper empty state message when no specs are configured
 - All new translations added in EN, FR, and AR
+---
+Task ID: 4
+Agent: Main Agent
+Task: Build admin Categories CRUD page (add, edit, delete)
+
+Work Log:
+- Root cause: Categories had NO admin management at all — no admin page, no sidebar entry, no POST/PUT/DELETE API endpoints
+- Added POST handler to `/api/categories/route.ts` for creating categories (admin auth, slug uniqueness check)
+- Created `/api/categories/[id]/route.ts` with PUT (update) and DELETE handlers
+- DELETE safely unlinks machines from category before deleting (sets categoryId to null)
+- PUT checks slug uniqueness when slug changes
+- Created `AdminCategoriesPage.tsx` component with full CRUD:
+  - Table view with icon, multilingual name (FR+EN), slug badge, machine count, order, edit/delete actions
+  - Search/filter input
+  - Dialog form with FR/EN/AR language tabs for name, slug (auto-generated from English name), order, icon field
+  - Delete confirmation with warning when machines are linked
+- Created `/eurl/lasource/categories/page.tsx` route with AdminAuthGuard
+- Added "Categories" nav item to AdminSidebar with Tag icon, positioned between Machines and Production Lines
+- Lint passes clean, dev server compiles successfully
+
+Stage Summary:
+- Full category management now available at /eurl/lasource/categories
+- Categories CRUD: Create, Read, Update, Delete all functional
+- Multilingual category names (FR/EN/AR) in admin form
+- Machine count displayed per category
+- Safe deletion with machine unlinking
+- Slug auto-generation from English name on create

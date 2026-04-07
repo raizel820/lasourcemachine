@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Factory,
   GitBranch,
+  Tag,
   Newspaper,
   Briefcase,
   Wrench,
@@ -42,6 +43,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/eurl/lasource/dashboard' },
   { id: 'machines', label: 'Machines', icon: Factory, href: '/eurl/lasource/machines' },
+  { id: 'categories', label: 'Categories', icon: Tag, href: '/eurl/lasource/categories' },
   { id: 'production-lines', label: 'Production Lines', icon: GitBranch, href: '/eurl/lasource/production-lines' },
   { id: 'news', label: 'News', icon: Newspaper, href: '/eurl/lasource/news' },
   { id: 'projects', label: 'Projects', icon: Briefcase, href: '/eurl/lasource/projects' },
