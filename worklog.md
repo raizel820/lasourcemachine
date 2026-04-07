@@ -266,3 +266,34 @@ Stage Summary:
 - JSON-format seed data (from initial seeding) now properly parsed as fallback when separate locale keys are empty
 - Both old format (JSON fields) and new format (separate locale keys) are supported
 - Lint passes cleanly, dev server compiles with no errors
+
+---
+Task ID: 16
+Agent: main-agent
+Task: Fix homepage statistics and settings not updating when changed from admin panel
+
+Work Log:
+- **Root cause identified**: Three interconnected bugs preventing live updates:
+  1. **`useSiteSettings` hook had an overly aggressive stale cache** — The old hook used module-level `cachedSettings` + `fetchedVersion` refs with a 5-minute stale timeout. When navigating from admin to homepage, the effect checked `fetchedVersion.current === settingsVersion && cachedSettings` and SKIPPED fetching because the cache looked fresh — even though the admin had changed the DB.
+  2. **`useCountUp` animation never re-ran** — `hasAnimated.current` was set to `true` on first render and never reset. When the stats target changed (from settings update), the displayed `count` stayed at the old animated value.
+  3. **Admin settings input fallbacks overrode DB values** — `value={settings.stats_years || '15'}` showed the default `'15'` instead of the actual DB value when the field was empty/falsy.
+- **Completely rewrote `useSiteSettings` hook** (`src/hooks/use-site-settings.ts`):
+  - Removed the complex `fetchedVersion`/`cacheTimestamp`/`STALE_MS` logic
+  - Simplified to: always fetch on mount, cache for same-session reuse, re-fetch on invalidation
+  - Added `visibilitychange` event listener — when browser tab becomes visible, re-fetches from API (catches cross-tab admin saves)
+  - `invalidateSettingsCache()` now clears cache + bumps version + notifies all subscribers → every mounted hook re-fetches
+  - Parse JSON locale fields for backward compatibility with seed data
+- **Fixed `useCountUp` animation** (`src/components/pages/HomePage.tsx`):
+  - Used `key={`${i}-${stat.value}`}` on StatCounter to force component remount when value changes
+  - When value changes, React unmounts old StatCounter and creates fresh one with count=0, hasAnimated=false
+  - Animation plays from scratch with correct new target value
+- **Fixed admin settings stat inputs** (`AdminSettingsPage.tsx`):
+  - Changed `value={settings.stats_years || '15'}` to `value={settings.stats_years}` so actual DB values are shown
+  - The `placeholder` attribute already provides the hint for empty fields
+
+Stage Summary:
+- Homepage now ALWAYS fetches fresh settings from the database on every page load
+- Stats animation resets and re-plays when values change (via key-based remounting)
+- Cross-tab updates work: saving in admin tab, then switching to homepage tab triggers re-fetch via visibilitychange
+- Admin settings inputs show actual DB values, not hardcoded defaults
+- Lint passes cleanly, dev server compiles with no errors

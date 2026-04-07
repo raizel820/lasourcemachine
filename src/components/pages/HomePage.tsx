@@ -186,7 +186,7 @@ export function HomePage() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 gap-8 lg:grid-cols-4 lg:gap-12">
             {stats.map((stat, i) => (
-              <StatCounter key={i} {...stat} locale={locale} />
+              <StatCounter key={`${i}-${stat.value}`} {...stat} locale={locale} />
             ))}
           </div>
         </div>

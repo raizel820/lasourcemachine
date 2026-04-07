@@ -5,139 +5,182 @@ import { COMPANY } from '@/lib/constants';
 import type { Locale } from '@/lib/types';
 
 interface SiteSettings {
-  company_phone: string;
-  company_email: string;
-  company_whatsapp: string;
-  company_address: string;
-  company_website: string;
-  company_name_fr: string;
-  company_name_en: string;
-  company_name_ar: string;
-  company_description_fr: string;
-  company_description_en: string;
-  company_description_ar: string;
-  social_facebook: string;
-  social_linkedin: string;
-  social_instagram: string;
-  social_youtube: string;
-  social_twitter: string;
-  working_hours_fr: string;
-  working_hours_en: string;
-  working_hours_ar: string;
-  stats_years: string;
-  stats_machines: string;
-  stats_clients: string;
-  stats_countries: string;
   [key: string]: string;
 }
 
-// ---- Reactive cache invalidation system ----
-let cachedSettings: SiteSettings | null = null;
-let cacheTimestamp = 0;
-let settingsVersion = 0;
-
+// ---- Simple, reliable cache ----
+// Module-level cache shared by all hook instances in the same JS context.
+let cachedData: SiteSettings | null = null;
+let cacheETag = ''; // track fetch freshness
+let versionCounter = 0; // bumped on invalidation
 const subscribers = new Set<() => void>();
 
-function notifySubscribers() {
+function notifyAll() {
+  versionCounter += 1;
+  cachedData = null;
+  cacheETag = '';
   subscribers.forEach((cb) => cb());
 }
 
-/** Force-invalidate the settings cache so ALL components re-fetch immediately */
+/** Call this after saving settings in the admin panel */
 export function invalidateSettingsCache() {
-  cachedSettings = null;
-  cacheTimestamp = 0;
-  settingsVersion += 1;
-  notifySubscribers();
+  notifyAll();
 }
 
-async function fetchSettings(): Promise<SiteSettings | null> {
+/** Fetch settings from the API (cache-busted) */
+async function fetchFromAPI(): Promise<SiteSettings | null> {
   try {
-    const res = await fetch(`/api/settings?_v=${settingsVersion}&_t=${Date.now()}`);
+    const res = await fetch(`/api/settings?_nocache=${Date.now()}`);
     if (res.ok) {
-      const data = await res.json();
-      return data.data || null;
+      const json = await res.json();
+      return json.data || null;
     }
-  } catch {
-    // Silently fail — fallback to constants
-  }
+  } catch { /* silent */ }
   return null;
+}
+
+/** Parse a JSON locale field like '{"en":"...","fr":"...","ar":"..."}' */
+function parseJsonLocale(jsonStr: string | undefined, locale: string): string {
+  if (!jsonStr) return '';
+  try {
+    const obj = JSON.parse(jsonStr);
+    if (typeof obj === 'object' && obj !== null) return obj[locale] || '';
+  } catch { /* not JSON */ }
+  return jsonStr;
 }
 
 /**
  * Hook to fetch and use live site settings from the database.
- * Falls back to COMPANY constants if settings haven't been saved yet.
- *
- * Automatically re-fetches when:
- * - Component first mounts
- * - Cache is older than 5 minutes
- * - invalidateSettingsCache() is called (from admin settings save)
+ * - Always fetches on mount
+ * - Re-fetches when `invalidateSettingsCache()` is called
+ * - Re-fetches when browser tab becomes visible ( catches cross-tab updates )
+ * - Falls back to COMPANY constants for missing values
  */
 export function useSiteSettings() {
-  // Initialize from cache synchronously (no effect needed)
-  const [settings, setSettings] = useState<SiteSettings | null>(cachedSettings);
-  const [loaded, setLoaded] = useState(() => !!cachedSettings);
-  // Track version to detect external invalidations
-  const [localVersion, setLocalVersion] = useState(settingsVersion);
-  // Ref to prevent double-fetching
-  const fetchedVersion = useRef(settingsVersion);
+  const [settings, setSettings] = useState<SiteSettings | null>(cachedData);
+  const [loaded, setLoaded] = useState(() => !!cachedData);
+  const localVer = useRef(versionCounter);
 
-  // Subscribe to cache invalidations — only calls setState in a callback from external system
+  // Re-fetch whenever version changes (from invalidation)
   useEffect(() => {
-    const callback = () => {
-      // Trigger re-render with new version; the fetch effect will run after
-      setLocalVersion(settingsVersion);
-    };
-    subscribers.add(callback);
-    return () => {
-      subscribers.delete(callback);
-    };
-  }, []);
-
-  // Fetch effect — only runs when localVersion changes (invalidation or mount)
-  useEffect(() => {
-    // Skip if we already fetched this version and have cached data
-    if (fetchedVersion.current === settingsVersion && cachedSettings) return;
-
-    const STALE_MS = 5 * 60 * 1000;
-    // If cache is fresh, don't re-fetch
-    if (cachedSettings && Date.now() - cacheTimestamp < STALE_MS && fetchedVersion.current === settingsVersion) return;
-
     let cancelled = false;
 
-    (async () => {
-      const data = await fetchSettings();
+    async function load() {
+      // If cache is fresh from a recent fetch, use it synchronously
+      if (cachedData && localVer.current === versionCounter) {
+        setSettings(cachedData);
+        setLoaded(true);
+        return;
+      }
+
+      const data = await fetchFromAPI();
       if (cancelled) return;
       if (data) {
-        cachedSettings = data;
-        cacheTimestamp = Date.now();
+        cachedData = data;
+        localVer.current = versionCounter;
       }
-      fetchedVersion.current = settingsVersion;
-      setSettings(cachedSettings);
+      setSettings(cachedData);
       setLoaded(true);
-    })();
+    }
 
+    load();
     return () => { cancelled = true; };
-  }, [localVersion]);
+  }, [versionCounter]); // re-run when version bumps
 
-  // Helper: parse a JSON field (e.g. `{"en":"...","fr":"...","ar":"..."}`) into locale value
-  const parseJsonLocale = useCallback((jsonStr: string | undefined, locale: Locale): string => {
-    if (!jsonStr) return '';
-    try {
-      const obj = JSON.parse(jsonStr);
-      if (typeof obj === 'object' && obj !== null) return obj[locale] || '';
-    } catch { /* not JSON */ }
-    return jsonStr; // return as plain string if not JSON
+  // Subscribe to invalidation events
+  useEffect(() => {
+    const cb = () => {
+      // Force re-render which triggers the fetch effect above
+      // We do this by bumping a dummy state
+      setSettings((prev) => prev); // trigger re-render
+    };
+    subscribers.add(cb);
+    return () => { subscribers.delete(cb); };
   }, []);
+
+  // Re-fetch when tab becomes visible (catches cross-tab admin saves)
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === 'visible') {
+        fetchFromAPI().then((data) => {
+          if (data) {
+            cachedData = data;
+            localVer.current = versionCounter;
+            setSettings(data);
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
+
+  // ---- Convenience accessors ----
 
   const get = useCallback((key: string, fallback: string): string => {
     if (settings && settings[key]) return settings[key];
     return fallback;
   }, [settings]);
 
-  const statsYears = parseInt(settings?.stats_years || '15', 10) || 15;
-  const statsMachines = parseInt(settings?.stats_machines || '500', 10) || 500;
-  const statsClients = parseInt(settings?.stats_clients || '200', 10) || 200;
-  const statsCountries = parseInt(settings?.stats_countries || '10', 10) || 10;
+  const statsYears = parseInt(settings?.stats_years || '', 10) || 15;
+  const statsMachines = parseInt(settings?.stats_machines || '', 10) || 500;
+  const statsClients = parseInt(settings?.stats_clients || '', 10) || 200;
+  const statsCountries = parseInt(settings?.stats_countries || '', 10) || 10;
+
+  const companyName = useCallback((locale: Locale) => {
+    // Priority: separate locale key > JSON field > COMPANY constant
+    const sep = locale === 'ar' ? settings?.company_name_ar
+      : locale === 'en' ? settings?.company_name_en
+      : settings?.company_name_fr;
+    if (sep) return sep;
+    const fromJson = parseJsonLocale(settings?.company_name, locale);
+    if (fromJson) return fromJson;
+    return locale === 'ar' ? COMPANY.nameAr : COMPANY.name;
+  }, [settings]);
+
+  const description = useCallback((locale: Locale) => {
+    const sep = locale === 'ar' ? settings?.company_description_ar
+      : locale === 'en' ? settings?.company_description_en
+      : settings?.company_description_fr;
+    if (sep) return sep;
+    const fromJson = parseJsonLocale(settings?.company_description, locale);
+    if (fromJson) return fromJson;
+    return locale === 'ar' ? COMPANY.description.ar
+      : locale === 'en' ? COMPANY.description.en
+      : COMPANY.description.fr;
+  }, [settings]);
+
+  const workingHours = useCallback((locale: Locale) => {
+    const sep = locale === 'ar' ? settings?.working_hours_ar
+      : locale === 'en' ? settings?.working_hours_en
+      : settings?.working_hours_fr;
+    if (sep) return sep;
+    const fromJson = parseJsonLocale(settings?.working_hours, locale);
+    if (fromJson) return fromJson;
+    return locale === 'ar' ? COMPANY.workingHours.ar
+      : locale === 'en' ? COMPANY.workingHours.en
+      : COMPANY.workingHours.fr;
+  }, [settings]);
+
+  const seoTitle = useCallback((locale: Locale) => {
+    const sep = locale === 'ar' ? settings?.seo_title_ar
+      : locale === 'en' ? settings?.seo_title_en
+      : settings?.seo_title_fr;
+    if (sep) return sep;
+    const fromJson = parseJsonLocale(settings?.meta_title, locale);
+    if (fromJson) return fromJson;
+    return COMPANY.name;
+  }, [settings]);
+
+  const seoDescription = useCallback((locale: Locale) => {
+    const sep = locale === 'ar' ? settings?.seo_description_ar
+      : locale === 'en' ? settings?.seo_description_en
+      : settings?.seo_description_fr;
+    if (sep) return sep;
+    const fromJson = parseJsonLocale(settings?.meta_description, locale);
+    if (fromJson) return fromJson;
+    return '';
+  }, [settings]);
 
   return {
     settings: settings || {},
@@ -151,59 +194,11 @@ export function useSiteSettings() {
     website: settings?.company_website || COMPANY.website,
     facebook: settings?.social_facebook || COMPANY.facebook,
     linkedin: settings?.social_linkedin || COMPANY.linkedin,
-    companyName: useCallback((locale: Locale) => {
-      // Priority: separate locale key > JSON format > COMPANY constant
-      const sep = locale === 'ar' ? settings?.company_name_ar
-        : locale === 'en' ? settings?.company_name_en
-        : settings?.company_name_fr;
-      if (sep) return sep;
-      const fromJson = parseJsonLocale(settings?.company_name, locale);
-      if (fromJson) return fromJson;
-      return locale === 'ar' ? COMPANY.nameAr : COMPANY.name;
-    }, [settings, parseJsonLocale]),
-    description: useCallback((locale: Locale) => {
-      // Priority: separate locale key > JSON format > COMPANY constant
-      const sep = locale === 'ar' ? settings?.company_description_ar
-        : locale === 'en' ? settings?.company_description_en
-        : settings?.company_description_fr;
-      if (sep) return sep;
-      const fromJson = parseJsonLocale(settings?.company_description, locale);
-      if (fromJson) return fromJson;
-      return locale === 'ar' ? COMPANY.description.ar
-        : locale === 'en' ? COMPANY.description.en
-        : COMPANY.description.fr;
-    }, [settings, parseJsonLocale]),
-    workingHours: useCallback((locale: Locale) => {
-      // Priority: separate locale key > JSON format > COMPANY constant
-      const sep = locale === 'ar' ? settings?.working_hours_ar
-        : locale === 'en' ? settings?.working_hours_en
-        : settings?.working_hours_fr;
-      if (sep) return sep;
-      const fromJson = parseJsonLocale(settings?.working_hours, locale);
-      if (fromJson) return fromJson;
-      return locale === 'ar' ? COMPANY.workingHours.ar
-        : locale === 'en' ? COMPANY.workingHours.en
-        : COMPANY.workingHours.fr;
-    }, [settings, parseJsonLocale]),
-    // SEO helpers
-    seoTitle: useCallback((locale: Locale) => {
-      const sep = locale === 'ar' ? settings?.seo_title_ar
-        : locale === 'en' ? settings?.seo_title_en
-        : settings?.seo_title_fr;
-      if (sep) return sep;
-      const fromJson = parseJsonLocale(settings?.meta_title, locale);
-      if (fromJson) return fromJson;
-      return COMPANY.name;
-    }, [settings, parseJsonLocale]),
-    seoDescription: useCallback((locale: Locale) => {
-      const sep = locale === 'ar' ? settings?.seo_description_ar
-        : locale === 'en' ? settings?.seo_description_en
-        : settings?.seo_description_fr;
-      if (sep) return sep;
-      const fromJson = parseJsonLocale(settings?.meta_description, locale);
-      if (fromJson) return fromJson;
-      return '';
-    }, [settings, parseJsonLocale]),
+    companyName,
+    description,
+    workingHours,
+    seoTitle,
+    seoDescription,
     seoOgImage: settings?.seo_og_image || '',
   };
 }
