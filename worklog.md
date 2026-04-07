@@ -430,3 +430,35 @@ Stage Summary:
 - All price conversions across the site automatically use the admin-configured rates
 - Rates update in real-time after admin saves (via cache invalidation + re-fetch)
 - Helpful UI shows the inverse rate (e.g., how many DZD per USD/EUR)
+---
+Task ID: 6
+Agent: Main Agent
+Task: Delete uploaded image/PDF files from disk when entities are deleted or images replaced
+
+Work Log:
+- Created `src/lib/file-cleanup.ts` utility with two functions:
+  - `deleteUploadedFiles(urls)` — Accepts array of URLs (strings, null, or JSON arrays). Only deletes files under `/uploads/` (ignores external URLs). Handles JSON array parsing for gallery images. Silently catches errors so DB operations are never blocked.
+  - `parseImageUrls(jsonStr)` — Helper to extract URLs from JSON array strings
+- Updated DELETE handlers to delete files before removing DB records:
+  - Machines: deletes gallery images (JSON array), cover image, PDF catalog
+  - Production Lines: deletes gallery images, cover image
+  - News: deletes cover image, gallery images
+  - Projects: deletes cover image, gallery images
+  - Services: deletes service image
+  - Partners: added DELETE handler (was missing!), deletes logo
+- Updated PUT handlers to delete old files when images are replaced:
+  - Machines: cleans up old images, cover, PDF when they change
+  - Production Lines: cleans up old images, cover
+  - News: cleans up old cover, gallery images
+  - Projects: cleans up old cover, gallery images
+  - Services: cleans up old service image
+  - Old files deleted in background (.catch(() => {})) to not block API response
+- Updated Settings API: when company_logo, company_favicon, or seo_og_image change value, the old file is automatically deleted
+- Lint passes clean, dev server compiles successfully
+
+Stage Summary:
+- All 6 entity types (machines, production lines, news, projects, services, partners) now clean up files on DELETE
+- All 6 entity types now clean up old files when images are REPLACED via PUT
+- Admin settings logo/favicon/OG image replacement also cleans up old files
+- External URLs (not starting with /uploads/) are never touched — only self-hosted uploads are deleted
+- File deletion errors are silently caught to prevent blocking database operations

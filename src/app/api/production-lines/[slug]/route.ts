@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { deleteUploadedFiles } from '@/lib/file-cleanup'
+import { parseImageUrls } from '@/lib/file-cleanup'
 
 // Admin auth helper
 function isAdmin(req: NextRequest): boolean {
@@ -64,6 +66,15 @@ export async function PUT(
       }
     }
 
+    // Clean up old files if images/cover are being replaced
+    const oldFilesToDelete: string[] = []
+    if (body.images !== undefined && existing.images !== body.images) {
+      oldFilesToDelete.push(existing.images)
+    }
+    if (body.coverImage !== undefined && existing.coverImage !== body.coverImage) {
+      oldFilesToDelete.push(existing.coverImage)
+    }
+
     const productionLine = await db.productionLine.update({
       where: { slug },
       data: {
@@ -78,6 +89,11 @@ export async function PUT(
         ...(body.order !== undefined && { order: body.order }),
       },
     })
+
+    // Delete old uploaded files in background
+    if (oldFilesToDelete.length > 0) {
+      deleteUploadedFiles(oldFilesToDelete).catch(() => {})
+    }
 
     return NextResponse.json({ data: productionLine })
   } catch (error) {
@@ -104,6 +120,9 @@ export async function DELETE(
 
     // Delete junction table entries first
     await db.machineProductionLine.deleteMany({ where: { productionLineId: existing.id } })
+
+    // Delete uploaded files (images, cover)
+    await deleteUploadedFiles([existing.images, existing.coverImage])
 
     await db.productionLine.delete({ where: { slug } })
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { deleteUploadedFiles } from '@/lib/file-cleanup'
 
 // Admin auth helper
 function isAdmin(req: NextRequest): boolean {
@@ -47,6 +48,12 @@ export async function PUT(
       return NextResponse.json({ error: 'Service not found' }, { status: 404 })
     }
 
+    // Clean up old image if being replaced
+    const oldFilesToDelete: string[] = []
+    if (body.image !== undefined && existing.image !== body.image) {
+      oldFilesToDelete.push(existing.image)
+    }
+
     const service = await db.service.update({
       where: { id },
       data: {
@@ -59,6 +66,11 @@ export async function PUT(
         ...(body.status !== undefined && { status: body.status }),
       },
     })
+
+    // Delete old uploaded files in background
+    if (oldFilesToDelete.length > 0) {
+      deleteUploadedFiles(oldFilesToDelete).catch(() => {})
+    }
 
     return NextResponse.json({ data: service })
   } catch (error) {
@@ -82,6 +94,9 @@ export async function DELETE(
     if (!existing) {
       return NextResponse.json({ error: 'Service not found' }, { status: 404 })
     }
+
+    // Delete uploaded files (service image)
+    await deleteUploadedFiles([existing.image])
 
     await db.service.delete({ where: { id } })
 

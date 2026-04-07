@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { deleteUploadedFiles } from '@/lib/file-cleanup'
 
 // Admin auth helper
 function isAdmin(req: NextRequest): boolean {
@@ -48,5 +49,35 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error creating partner:', error)
     return NextResponse.json({ error: 'Failed to create partner' }, { status: 500 })
+  }
+}
+
+// DELETE /api/partners - Delete partner (admin only)
+export async function DELETE(req: NextRequest) {
+  try {
+    if (!isAdmin(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await req.json()
+    const { id } = body
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 })
+    }
+
+    const existing = await db.partner.findUnique({ where: { id } })
+    if (!existing) {
+      return NextResponse.json({ error: 'Partner not found' }, { status: 404 })
+    }
+
+    // Delete uploaded logo file
+    await deleteUploadedFiles([existing.logo])
+
+    await db.partner.delete({ where: { id } })
+
+    return NextResponse.json({ message: 'Partner deleted successfully' })
+  } catch (error) {
+    console.error('Error deleting partner:', error)
+    return NextResponse.json({ error: 'Failed to delete partner' }, { status: 500 })
   }
 }

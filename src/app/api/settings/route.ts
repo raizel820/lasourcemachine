@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { deleteUploadedFiles } from '@/lib/file-cleanup'
 
 // Admin auth helper
 function isAdmin(req: NextRequest): boolean {
@@ -38,6 +39,19 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'settings must be a key-value object' }, { status: 400 })
     }
 
+    // Settings that contain uploaded file URLs — delete old files when they change
+    const fileSettingsKeys = ['company_logo', 'company_favicon', 'seo_og_image']
+    const oldValues: Record<string, string> = {}
+
+    for (const key of fileSettingsKeys) {
+      if (settings[key] !== undefined) {
+        const old = await db.siteSetting.findUnique({ where: { key } })
+        if (old && old.value && old.value !== settings[key]) {
+          oldValues[key] = old.value
+        }
+      }
+    }
+
     // Upsert each setting
     const upsertPromises = Object.entries(settings).map(([key, value]) =>
       db.siteSetting.upsert({
@@ -48,6 +62,12 @@ export async function PUT(req: NextRequest) {
     )
 
     await Promise.all(upsertPromises)
+
+    // Delete old uploaded files that were replaced
+    const oldFileUrls = Object.values(oldValues).filter(Boolean)
+    if (oldFileUrls.length > 0) {
+      await deleteUploadedFiles(oldFileUrls)
+    }
 
     return NextResponse.json({ message: 'Settings updated successfully' })
   } catch (error) {

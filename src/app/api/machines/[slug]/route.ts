@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { deleteUploadedFiles } from '@/lib/file-cleanup'
+import { parseImageUrls } from '@/lib/file-cleanup'
 
 // Admin auth helper
 function isAdmin(req: NextRequest): boolean {
@@ -64,6 +66,18 @@ export async function PUT(
       }
     }
 
+    // Clean up old files if images/cover/pdf are being replaced
+    const oldFilesToDelete: string[] = []
+    if (body.images !== undefined && existing.images !== body.images) {
+      oldFilesToDelete.push(existing.images)
+    }
+    if (body.coverImage !== undefined && existing.coverImage !== body.coverImage) {
+      oldFilesToDelete.push(existing.coverImage)
+    }
+    if (body.pdfUrl !== undefined && existing.pdfUrl !== body.pdfUrl) {
+      oldFilesToDelete.push(existing.pdfUrl)
+    }
+
     const machine = await db.machine.update({
       where: { slug },
       data: {
@@ -86,6 +100,11 @@ export async function PUT(
       },
       include: { category: true },
     })
+
+    // Delete old uploaded files in background (don't block response)
+    if (oldFilesToDelete.length > 0) {
+      deleteUploadedFiles(oldFilesToDelete).catch(() => {})
+    }
 
     return NextResponse.json({ data: machine })
   } catch (error) {
@@ -112,6 +131,9 @@ export async function DELETE(
 
     // Delete junction table entries first
     await db.machineProductionLine.deleteMany({ where: { machineId: existing.id } })
+
+    // Delete uploaded files (images, cover, PDF)
+    await deleteUploadedFiles([existing.images, existing.coverImage, existing.pdfUrl])
 
     await db.machine.delete({ where: { slug } })
 
