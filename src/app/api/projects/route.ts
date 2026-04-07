@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '12', 10)))
     const skip = (page - 1) * limit
 
-    const where = { status: 'published' as const }
+    const statusParam = searchParams.get('status') || 'published'
+    const where: Record<string, unknown> = statusParam === 'all' ? {} : { status: statusParam }
 
     const [projects, total] = await Promise.all([
       db.project.findMany({

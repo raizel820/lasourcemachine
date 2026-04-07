@@ -7,10 +7,15 @@ function isAdmin(req: NextRequest): boolean {
   return auth === 'Bearer admin-token'
 }
 
-// GET /api/services - List all services
-export async function GET() {
+// GET /api/services - List services (published by default, all for admin)
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url)
+    const statusParam = searchParams.get('status') || 'published'
+    const where: Record<string, unknown> = statusParam === 'all' ? {} : { status: statusParam }
+
     const services = await db.service.findMany({
+      where,
       orderBy: { order: 'asc' },
     })
 

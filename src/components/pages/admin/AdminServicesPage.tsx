@@ -121,7 +121,7 @@ export function AdminServicesPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('/api/services', { headers: ADMIN_HEADERS });
+      const res = await fetch('/api/services?status=all', { headers: ADMIN_HEADERS });
       if (res.ok) {
         const data = await res.json();
         setItems(data.data || []);

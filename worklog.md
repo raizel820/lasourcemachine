@@ -215,3 +215,25 @@ Stage Summary:
 - Settings changes in admin propagate immediately to all components via reactive cache invalidation
 - News creation now works with any language title (not just English)
 - Admin can configure homepage stats from the settings page
+
+---
+Task ID: 14
+Agent: main-agent
+Task: Fix admin panel showing 0 machines (and similar status=all bugs across all API routes)
+
+Work Log:
+- **Root cause identified**: Admin pages send `?status=all` to API routes to fetch both draft and published items. But 4 API routes were NOT handling `status=all` as a special keyword — they treated it as a literal status value, returning 0 results since no item has status='all'.
+- **Fixed Machines API** (`/api/machines/route.ts`): Changed `const where = { status }` to conditionally omit status filter when `status === 'all'`. This was the primary bug causing 0 machines in admin (13 machines exist but all had status != 'all').
+- **Fixed Production Lines API** (`/api/production-lines/route.ts`): Was hardcoded to `const where = { status: 'published' }` with no query param support. Added `statusParam` from query with same `status=all` handling pattern.
+- **Fixed Projects API** (`/api/projects/route.ts`): Same issue as production lines — hardcoded published-only. Added `statusParam` from query with `status=all` handling.
+- **Fixed Services API** (`/api/services/route.ts`): Had NO status filtering at all (returned everything including drafts). Added `statusParam` from query defaulting to 'published', with `status=all` to skip filter. Also fixed AdminServicesPage to send `?status=all` in its fetch call.
+- **Verified remaining APIs**: FAQs, Partners, Categories (no status field needed), Leads (correct optional filter), Contact (POST only), Settings (upsert pattern), Auth — all correct.
+- **Verified WhatsApp button**: Uses `useSiteSettings()` hook which fetches from `/api/settings` with reactive cache invalidation. Admin settings save calls `invalidateSettingsCache()`. Working correctly.
+- All 4 API fixes verified with curl tests returning correct counts (machines: 12, production-lines: 3, projects: 4, services: 5).
+
+Stage Summary:
+- Fixed 4 API routes with `status=all` filtering bugs (machines, production-lines, projects, services)
+- Admin machines page now correctly shows all 12 machines instead of 0
+- Admin production lines, projects, and services pages also fixed
+- Public pages continue to show only published items (default status='published')
+- Lint passes cleanly, dev server compiles successfully

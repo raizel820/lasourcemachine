@@ -20,7 +20,10 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '12', 10)))
     const skip = (page - 1) * limit
 
-    const where: Record<string, unknown> = { status }
+    const where: Record<string, unknown> = {}
+    if (status !== 'all') {
+      where.status = status
+    }
 
     if (category) {
       where.category = { slug: category }
