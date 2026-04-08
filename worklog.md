@@ -663,3 +663,33 @@ Stage Summary:
 - Leads: status filter works instantly
 - Machines: category filter badges work correctly
 - All admin pages: search filters work with multi-locale support
+---
+Task ID: 11
+Agent: main-agent
+Task: Fix production line detail page and admin editor - machine associations, fetch bugs, ordering
+
+Work Log:
+- **Fixed detail page fetch URL** — Changed from `/api/production-lines?slug=${currentSlug}` (list endpoint ignoring slug param, returning all items) to `/api/production-lines/${currentSlug}` (dedicated slug endpoint returning single object)
+- **Fixed detail page response parsing** — Updated from `Array.isArray(data.data) ? data.data[0] : null` to `data.data || null` since slug endpoint returns `{ data: productionLine }` (single object)
+- **Fixed PUT API for machine junction table** — Added machine association management to `/api/production-lines/[slug]/route.ts`: deletes existing junction entries, creates new ones with order from request body, includes machines in response
+- **Fixed POST API for machine junction table** — Added machine association creation to `/api/production-lines/route.ts`: creates junction entries with order when `body.machines` array is provided
+- **Fixed slug endpoint admin access** — Updated GET handler to check for admin auth header; admin users can fetch any status (including draft), public users only get published items
+- **Completely rewrote AdminProductionLinesPage.tsx**:
+  - Fixed `openEdit` to fetch full production line from slug endpoint (with machines relation) instead of using list item data
+  - Fixed loading existing machine associations: `machineIds: []` → extracts from `fullItem.machines` junction table entries
+  - Fixed `handleSubmit` to send `machines` array with `{ machineId, order }` objects to API
+  - Replaced simple checkbox list with ordered machine selector:
+    - Selected machines shown as ordered list with number, name, up/down arrows, remove button
+    - Unselected machines shown in searchable dropdown below
+    - Machine search filters unselected machines by name/slug
+  - Fixed table to show actual machine count from `item.machines?.length` instead of `item.machineIds?.length`
+  - Fixed machines API fetch to use `status=all` so all machines available for selection
+  - Added `Separator` component import for visual grouping
+- **Database sync** — Ran `prisma db push --force-reset` and re-seeded to fix missing `specs`, `basePrice`, `currency` columns on ProductionLine table
+
+Stage Summary:
+- Production line detail page now correctly fetches by slug and displays single production line
+- Machine associations (junction table) are properly saved, loaded, and displayed
+- Admin editor supports full machine ordering with up/down arrows
+- Admin can edit draft production lines (slug endpoint accepts admin auth)
+- All changes verified with curl API testing: machines, specs, price all save and load correctly

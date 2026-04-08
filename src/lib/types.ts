@@ -74,6 +74,9 @@ export interface ProductionLine {
   shortDesc?: string; // TranslatableString JSON
   images: string; // JSON array of image URLs
   coverImage?: string;
+  specs?: string; // JSON: {en: [{key, value}], fr: [...], ar: [...]}
+  basePrice?: number;
+  currency: string;
   machines: MachineProductionLine[]; // relation
   featured: boolean;
   status: string; // 'draft' | 'published'

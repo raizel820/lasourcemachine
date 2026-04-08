@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, GripVertical, ArrowUp, ArrowDown, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,13 +43,36 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { ImageUpload } from '@/components/ui/image-upload';
 import { ImageGalleryUpload } from '@/components/ui/image-gallery-upload';
-import { getLocalizedValue } from '@/lib/helpers';
-import { generateSlug } from '@/lib/helpers';
+import { getLocalizedValue, generateSlug } from '@/lib/helpers';
 
 const ADMIN_HEADERS = { Authorization: 'Bearer admin-token' };
 
+// Machine item for the selector
+interface MachineItem {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+// Machine association stored in form
+interface MachineAssociation {
+  machineId: string;
+  order: number;
+}
+
+// Junction table entry from API
+interface MachineProductionLine {
+  id: string;
+  machineId: string;
+  productionLineId: string;
+  order: number;
+  machine?: MachineItem;
+}
+
+// Production line from API
 interface ProductionLine {
   id: string;
   name: string;
@@ -58,15 +81,18 @@ interface ProductionLine {
   shortDesc: string | null;
   images: string;
   coverImage: string | null;
+  specs: string | null;
+  basePrice: number | null;
+  currency: string;
   featured: boolean;
   status: string;
   order: number;
+  machines?: MachineProductionLine[];
 }
 
-interface MachineItem {
-  id: string;
-  name: string;
-  slug: string;
+interface SpecRow {
+  key: string;
+  value: string;
 }
 
 interface FormData {
@@ -85,7 +111,12 @@ interface FormData {
   status: string;
   featured: boolean;
   order: number;
-  machineIds: string[];
+  machines: MachineAssociation[];
+  basePrice: string;
+  currency: string;
+  specs_en: SpecRow[];
+  specs_fr: SpecRow[];
+  specs_ar: SpecRow[];
 }
 
 const emptyForm: FormData = {
@@ -104,7 +135,12 @@ const emptyForm: FormData = {
   status: 'draft',
   featured: false,
   order: 0,
-  machineIds: [],
+  machines: [],
+  basePrice: '',
+  currency: 'DZD',
+  specs_en: [],
+  specs_fr: [],
+  specs_ar: [],
 };
 
 function parseJsonField(value: string | null): Record<string, string> {
@@ -121,9 +157,26 @@ function buildJsonField(obj: Record<string, string>): string {
   return JSON.stringify(obj);
 }
 
+function parseSpecsField(value: string | null): Record<string, SpecRow[]> {
+  try {
+    const parsed = JSON.parse(value || '{}');
+    if (typeof parsed === 'object' && parsed !== null) {
+      const result: Record<string, SpecRow[]> = {
+        en: Array.isArray(parsed.en) ? parsed.en.map((s: Record<string, string>) => ({ key: s.key || '', value: s.value || '' })) : [],
+        fr: Array.isArray(parsed.fr) ? parsed.fr.map((s: Record<string, string>) => ({ key: s.key || '', value: s.value || '' })) : [],
+        ar: Array.isArray(parsed.ar) ? parsed.ar.map((s: Record<string, string>) => ({ key: s.key || '', value: s.value || '' })) : [],
+      };
+      return result;
+    }
+    return { en: [], fr: [], ar: [] };
+  } catch {
+    return { en: [], fr: [], ar: [] };
+  }
+}
+
 export function AdminProductionLinesPage() {
   const [items, setItems] = useState<ProductionLine[]>([]);
-  const [machines, setMachines] = useState<MachineItem[]>([]);
+  const [allMachines, setAllMachines] = useState<MachineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -131,12 +184,13 @@ export function AdminProductionLinesPage() {
   const [deleteItem, setDeleteItem] = useState<ProductionLine | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const [search, setSearch] = useState('');
+  const [machineSearch, setMachineSearch] = useState('');
 
   const fetchData = async () => {
     try {
       const [linesRes, machinesRes] = await Promise.all([
         fetch('/api/production-lines?limit=100&status=all', { headers: ADMIN_HEADERS }),
-        fetch('/api/machines?limit=100', { headers: ADMIN_HEADERS }),
+        fetch('/api/machines?limit=100&status=all', { headers: ADMIN_HEADERS }),
       ]);
       if (linesRes.ok) {
         const data = await linesRes.json();
@@ -144,7 +198,7 @@ export function AdminProductionLinesPage() {
       }
       if (machinesRes.ok) {
         const data = await machinesRes.json();
-        setMachines((data.data || []).map((m: MachineItem) => ({ id: m.id, name: m.name, slug: m.slug })));
+        setAllMachines((data.data || []).map((m: MachineItem) => ({ id: m.id, name: m.name, slug: m.slug })));
       }
     } catch {
       toast.error('Failed to fetch data');
@@ -157,36 +211,63 @@ export function AdminProductionLinesPage() {
 
   const openCreate = () => {
     setEditItem(null);
-    setForm(emptyForm);
+    setForm({ ...emptyForm, specs_en: [{ key: '', value: '' }], specs_fr: [{ key: '', value: '' }], specs_ar: [{ key: '', value: '' }] });
+    setMachineSearch('');
     setShowForm(true);
   };
 
-  const openEdit = (item: ProductionLine) => {
-    const name = parseJsonField(item.name);
-    const description = parseJsonField(item.description);
-    const shortDesc = parseJsonField(item.shortDesc);
-    setEditItem(item);
-    setForm({
-      name_en: name.en || '',
-      name_fr: name.fr || '',
-      name_ar: name.ar || '',
-      description_en: description.en || '',
-      description_fr: description.fr || '',
-      description_ar: description.ar || '',
-      shortDesc_en: shortDesc.en || '',
-      shortDesc_fr: shortDesc.fr || '',
-      shortDesc_ar: shortDesc.ar || '',
-      slug: item.slug,
-      images: (() => {
-        try { return JSON.parse(item.images || '[]'); } catch { return []; }
-      })(),
-      coverImage: item.coverImage || '',
-      status: item.status,
-      featured: item.featured,
-      order: item.order,
-      machineIds: [],
-    });
-    setShowForm(true);
+  const openEdit = async (item: ProductionLine) => {
+    setMachineSearch('');
+    // Fetch the full production line with machine associations from the slug endpoint
+    try {
+      const res = await fetch(`/api/production-lines/${item.slug}`, { headers: ADMIN_HEADERS });
+      if (res.ok) {
+        const data = await res.json();
+        const fullItem = data.data as ProductionLine;
+        const name = parseJsonField(fullItem.name);
+        const description = parseJsonField(fullItem.description);
+        const shortDesc = parseJsonField(fullItem.shortDesc);
+        const specs = parseSpecsField(fullItem.specs);
+
+        // Build machines array from junction table
+        const machines: MachineAssociation[] = (fullItem.machines || []).map(mpl => ({
+          machineId: mpl.machineId,
+          order: mpl.order,
+        }));
+
+        setEditItem(fullItem);
+        setForm({
+          name_en: name.en || '',
+          name_fr: name.fr || '',
+          name_ar: name.ar || '',
+          description_en: description.en || '',
+          description_fr: description.fr || '',
+          description_ar: description.ar || '',
+          shortDesc_en: shortDesc.en || '',
+          shortDesc_fr: shortDesc.fr || '',
+          shortDesc_ar: shortDesc.ar || '',
+          slug: fullItem.slug,
+          images: (() => {
+            try { return JSON.parse(fullItem.images || '[]'); } catch { return []; }
+          })(),
+          coverImage: fullItem.coverImage || '',
+          status: fullItem.status,
+          featured: fullItem.featured,
+          order: fullItem.order,
+          machines: machines.sort((a, b) => a.order - b.order),
+          basePrice: fullItem.basePrice != null ? String(fullItem.basePrice) : '',
+          currency: fullItem.currency || 'DZD',
+          specs_en: specs.en.length > 0 ? specs.en : [{ key: '', value: '' }],
+          specs_fr: specs.fr.length > 0 ? specs.fr : [{ key: '', value: '' }],
+          specs_ar: specs.ar.length > 0 ? specs.ar : [{ key: '', value: '' }],
+        });
+        setShowForm(true);
+      } else {
+        toast.error('Failed to load production line details');
+      }
+    } catch {
+      toast.error('Failed to load production line details');
+    }
   };
 
   const handleSubmit = async () => {
@@ -200,6 +281,13 @@ export function AdminProductionLinesPage() {
         ? (form.slug || generateSlug(form.name_en))
         : generateSlug(form.name_en);
 
+      // Build specs JSON
+      const specsObj: Record<string, SpecRow[]> = {
+        en: form.specs_en.filter(s => s.key.trim()),
+        fr: form.specs_fr.filter(s => s.key.trim()),
+        ar: form.specs_ar.filter(s => s.key.trim()),
+      };
+
       const body = {
         name: buildJsonField({ en: form.name_en, fr: form.name_fr, ar: form.name_ar }),
         slug,
@@ -207,9 +295,17 @@ export function AdminProductionLinesPage() {
         shortDesc: buildJsonField({ en: form.shortDesc_en, fr: form.shortDesc_fr, ar: form.shortDesc_ar }),
         images: JSON.stringify(form.images),
         coverImage: form.coverImage || null,
+        specs: JSON.stringify(specsObj),
+        basePrice: form.basePrice ? parseFloat(form.basePrice) : null,
+        currency: form.currency || 'DZD',
         status: form.status,
         featured: form.featured,
         order: form.order,
+        // Send machine associations with order
+        machines: form.machines.map((m, idx) => ({
+          machineId: m.machineId,
+          order: idx,
+        })),
       };
 
       const url = editItem
@@ -257,17 +353,76 @@ export function AdminProductionLinesPage() {
     }
   };
 
-  const updateForm = (key: keyof FormData, value: string | boolean | number | string[]) => {
+  const updateForm = (key: keyof FormData, value: string | boolean | number | string[] | SpecRow[] | MachineAssociation[]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const toggleMachine = (machineId: string) => {
+  // Machine management functions
+  const selectedMachineIds = new Set(form.machines.map(m => m.machineId));
+  const unselectedMachines = allMachines.filter(m => !selectedMachineIds.has(m.id));
+  const filteredUnselected = machineSearch.trim()
+    ? unselectedMachines.filter(m => {
+        const q = machineSearch.toLowerCase();
+        return getLocalizedValue(m.name, 'fr').toLowerCase().includes(q) ||
+               getLocalizedValue(m.name, 'en').toLowerCase().includes(q) ||
+               m.slug.toLowerCase().includes(q);
+      })
+    : unselectedMachines;
+
+  const addMachine = (machineId: string) => {
     setForm((prev) => ({
       ...prev,
-      machineIds: prev.machineIds.includes(machineId)
-        ? prev.machineIds.filter((id) => id !== machineId)
-        : [...prev.machineIds, machineId],
+      machines: [...prev.machines, { machineId, order: prev.machines.length }],
     }));
+  };
+
+  const removeMachine = (machineId: string) => {
+    setForm((prev) => ({
+      ...prev,
+      machines: prev.machines
+        .filter(m => m.machineId !== machineId)
+        .map((m, idx) => ({ ...m, order: idx })),
+    }));
+  };
+
+  const moveMachine = (index: number, direction: 'up' | 'down') => {
+    setForm((prev) => {
+      const arr = [...prev.machines];
+      const swapIdx = direction === 'up' ? index - 1 : index + 1;
+      if (swapIdx < 0 || swapIdx >= arr.length) return prev;
+      [arr[index], arr[swapIdx]] = [arr[swapIdx], arr[index]];
+      return { ...prev, machines: arr.map((m, i) => ({ ...m, order: i })) };
+    });
+  };
+
+  const addSpecRow = (locale: 'en' | 'fr' | 'ar') => {
+    const key = `specs_${locale}` as keyof FormData;
+    setForm((prev) => ({
+      ...prev,
+      [key]: [...(prev[key] as SpecRow[]), { key: '', value: '' }],
+    }));
+  };
+
+  const updateSpecRow = (locale: 'en' | 'fr' | 'ar', index: number, field: 'key' | 'value', val: string) => {
+    const key = `specs_${locale}` as keyof FormData;
+    setForm((prev) => {
+      const rows = [...(prev[key] as SpecRow[])];
+      rows[index] = { ...rows[index], [field]: val };
+      return { ...prev, [key]: rows };
+    });
+  };
+
+  const removeSpecRow = (locale: 'en' | 'fr' | 'ar', index: number) => {
+    const key = `specs_${locale}` as keyof FormData;
+    setForm((prev) => {
+      const rows = (prev[key] as SpecRow[]).filter((_, i) => i !== index);
+      return { ...prev, [key]: rows.length > 0 ? rows : [{ key: '', value: '' }] };
+    });
+  };
+
+  const getMachineName = (machineId: string): string => {
+    const m = allMachines.find(m => m.id === machineId);
+    return m ? getLocalizedValue(m.name, 'fr') : machineId;
   };
 
   const filteredItems = items.filter((item) => {
@@ -309,16 +464,17 @@ export function AdminProductionLinesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Machines</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Featured</TableHead>
-                  <TableHead>Order</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No production lines found
                     </TableCell>
                   </TableRow>
@@ -327,6 +483,15 @@ export function AdminProductionLinesPage() {
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
                         {getLocalizedValue(item.name, 'fr')}
+                      </TableCell>
+                      <TableCell>
+                        {item.basePrice
+                          ? `${Number(item.basePrice).toLocaleString()} ${item.currency || 'DZD'}`
+                          : <span className="text-muted-foreground">-</span>
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{item.machines?.length || 0}</Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant={item.status === 'published' ? 'default' : 'secondary'}>
@@ -339,7 +504,6 @@ export function AdminProductionLinesPage() {
                           {!item.featured && <span className="text-muted-foreground">-</span>}
                         </div>
                       </TableCell>
-                      <TableCell>{item.order}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button size="sm" variant="ghost" onClick={() => openEdit(item)} className="cursor-pointer">
@@ -361,13 +525,14 @@ export function AdminProductionLinesPage() {
 
       {/* Create/Edit Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>{editItem ? 'Edit Production Line' : 'Add Production Line'}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[75vh] pr-4">
-            <div className="space-y-4 pb-4">
-              {/* Name tabs */}
+          <ScrollArea className="max-h-[80vh] pr-4">
+            <div className="space-y-5 pb-4">
+
+              {/* Name */}
               <div className="space-y-2">
                 <Label>Name</Label>
                 <Tabs defaultValue="fr">
@@ -382,7 +547,7 @@ export function AdminProductionLinesPage() {
                 </Tabs>
               </div>
 
-              {/* Description tabs */}
+              {/* Description */}
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Tabs defaultValue="fr">
@@ -397,7 +562,7 @@ export function AdminProductionLinesPage() {
                 </Tabs>
               </div>
 
-              {/* Short Description tabs */}
+              {/* Short Description */}
               <div className="space-y-2">
                 <Label>Short Description</Label>
                 <Tabs defaultValue="fr">
@@ -412,47 +577,195 @@ export function AdminProductionLinesPage() {
                 </Tabs>
               </div>
 
+              {/* Slug */}
               <div className="space-y-2">
                 <Label>Slug</Label>
                 <Input value={form.slug} onChange={(e) => updateForm('slug', e.target.value)} placeholder="production-line-slug" />
               </div>
 
+              {/* Images */}
               <ImageGalleryUpload
                 images={form.images}
                 onChange={(urls) => updateForm('images', urls)}
-                label="Gallery Images"
+                label="Gallery Images (line photos, assembled views)"
                 folder="production-lines"
               />
 
               <ImageUpload
                 value={form.coverImage}
                 onChange={(url) => updateForm('coverImage', url)}
-                label="Cover Image"
+                label="Cover Image (assembled line photo)"
                 placeholder="Upload or paste cover image URL"
                 folder="production-lines"
                 previewClassName="h-32 w-full"
               />
 
-              {/* Machine Selection */}
+              {/* Price */}
               <div className="space-y-2">
-                <Label>Machines</Label>
-                <div className="border rounded-md max-h-48 overflow-y-auto p-2 space-y-1">
-                  {machines.length === 0 ? (
-                    <p className="text-sm text-muted-foreground p-2">No machines available</p>
-                  ) : (
-                    machines.map((m) => (
-                      <div key={m.id} className="flex items-center gap-2 p-1 hover:bg-muted rounded">
-                        <Checkbox
-                          checked={form.machineIds.includes(m.id)}
-                          onCheckedChange={() => toggleMachine(m.id)}
-                        />
-                        <span className="text-sm">{getLocalizedValue(m.name, 'fr')}</span>
+                <Label>Price</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.basePrice}
+                    onChange={(e) => updateForm('basePrice', e.target.value)}
+                    placeholder="0.00"
+                  />
+                  <Select value={form.currency} onValueChange={(v) => updateForm('currency', v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DZD">DZD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Production Line Specifications */}
+              <div className="space-y-2">
+                <Label>Production Line Specifications</Label>
+                <Tabs defaultValue="fr">
+                  <TabsList className="mb-2">
+                    <TabsTrigger value="fr">FR</TabsTrigger>
+                    <TabsTrigger value="en">EN</TabsTrigger>
+                    <TabsTrigger value="ar">AR</TabsTrigger>
+                  </TabsList>
+                  {(['fr', 'en', 'ar'] as const).map((loc) => (
+                    <TabsContent key={loc} value={loc}>
+                      <div className="space-y-2">
+                        {(form[`specs_${loc}`] as SpecRow[]).map((row, idx) => (
+                          <div key={idx} className="flex gap-2 items-center">
+                            <Input
+                              placeholder="Key"
+                              value={row.key}
+                              onChange={(e) => updateSpecRow(loc, idx, 'key', e.target.value)}
+                              className="flex-1"
+                              dir={loc === 'ar' ? 'rtl' : 'ltr'}
+                            />
+                            <Input
+                              placeholder="Value"
+                              value={row.value}
+                              onChange={(e) => updateSpecRow(loc, idx, 'value', e.target.value)}
+                              className="flex-1"
+                              dir={loc === 'ar' ? 'rtl' : 'ltr'}
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="cursor-pointer text-destructive hover:text-destructive flex-shrink-0"
+                              onClick={() => removeSpecRow(loc, idx)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="cursor-pointer w-full"
+                          onClick={() => addSpecRow(loc)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" /> Add Row
+                        </Button>
                       </div>
-                    ))
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </div>
+
+              <Separator />
+
+              {/* Machine Selection with Ordering */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Included Machines (in order)</Label>
+                  <Badge variant="secondary">{form.machines.length} machine{form.machines.length !== 1 ? 's' : ''}</Badge>
+                </div>
+
+                {/* Selected machines list with ordering */}
+                {form.machines.length > 0 && (
+                  <div className="border rounded-md divide-y">
+                    {form.machines.map((m, idx) => (
+                      <div key={m.machineId} className="flex items-center gap-2 px-3 py-2">
+                        <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-xs font-mono text-muted-foreground w-6 text-center flex-shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="text-sm flex-1 truncate">
+                          {getMachineName(m.machineId)}
+                        </span>
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 cursor-pointer"
+                            disabled={idx === 0}
+                            onClick={() => moveMachine(idx, 'up')}
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 cursor-pointer"
+                            disabled={idx === form.machines.length - 1}
+                            onClick={() => moveMachine(idx, 'down')}
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 cursor-pointer text-destructive hover:text-destructive"
+                            onClick={() => removeMachine(m.machineId)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Machine selector dropdown */}
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Search machines to add..."
+                    value={machineSearch}
+                    onChange={(e) => setMachineSearch(e.target.value)}
+                    className="text-sm"
+                  />
+                  {filteredUnselected.length > 0 ? (
+                    <div className="border rounded-md max-h-40 overflow-y-auto">
+                      {filteredUnselected.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => addMachine(m.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted transition cursor-pointer"
+                        >
+                          <Plus className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate">{getLocalizedValue(m.name, 'fr')}</span>
+                          <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">{m.slug}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground px-1">
+                      {machineSearch.trim()
+                        ? 'No matching machines found'
+                        : 'All machines have been added to this production line'}
+                    </p>
                   )}
                 </div>
               </div>
 
+              <Separator />
+
+              {/* Status Row */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex items-center gap-2">
                   <Switch checked={form.featured} onCheckedChange={(v) => updateForm('featured', v)} />
@@ -476,6 +789,7 @@ export function AdminProductionLinesPage() {
                 </div>
               </div>
 
+              {/* Submit */}
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button variant="outline" onClick={() => setShowForm(false)} className="cursor-pointer">Cancel</Button>
                 <Button onClick={handleSubmit} disabled={saving} className="cursor-pointer">
@@ -495,6 +809,7 @@ export function AdminProductionLinesPage() {
             <AlertDialogTitle>Delete Production Line</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete &quot;{deleteItem ? getLocalizedValue(deleteItem.name, 'fr') : ''}&quot;?
+              This will also remove all machine associations.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -68,6 +68,9 @@ export async function POST(req: NextRequest) {
       shortDesc,
       images,
       coverImage,
+      specs,
+      basePrice,
+      currency,
       featured,
       status,
       order,
@@ -90,11 +93,25 @@ export async function POST(req: NextRequest) {
         shortDesc: shortDesc || null,
         images: images || '[]',
         coverImage: coverImage || null,
+        specs: specs || null,
+        basePrice: basePrice ?? null,
+        currency: currency || 'DZD',
         featured: featured || false,
         status: status || 'draft',
         order: order || 0,
       },
     })
+
+    // Handle machine associations (junction table)
+    if (Array.isArray(body.machines) && body.machines.length > 0) {
+      await db.machineProductionLine.createMany({
+        data: body.machines.map((m: { machineId: string; order: number }, idx: number) => ({
+          machineId: m.machineId,
+          productionLineId: productionLine.id,
+          order: m.order ?? idx,
+        })),
+      })
+    }
 
     return NextResponse.json({ data: productionLine }, { status: 201 })
   } catch (error) {

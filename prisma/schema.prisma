@@ -78,6 +78,14 @@ model ProductionLine {
   shortDesc   String?   // JSON string {en, fr, ar}
   images      String    @default("[]") // JSON array
   coverImage  String?
+  
+  // Specifications stored as JSON: {en: [{key, value}], fr: [...], ar: [...]}
+  specs       String?   // JSON
+  
+  // Pricing
+  basePrice   Float?
+  currency    String    @default("DZD")
+  
   featured    Boolean   @default(false)
   status      String    @default("draft")
   order       Int       @default(0)

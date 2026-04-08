@@ -9,15 +9,16 @@ function isAdmin(req: NextRequest): boolean {
   return auth === 'Bearer admin-token'
 }
 
-// GET /api/production-lines/[slug] - Get single published production line
+// GET /api/production-lines/[slug] - Get single production line (published for public, any for admin)
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params
+    const admin = isAdmin(req)
     const productionLine = await db.productionLine.findFirst({
-      where: { slug, status: 'published' },
+      where: admin ? { slug } : { slug, status: 'published' },
       include: {
         machines: {
           include: {
@@ -75,6 +76,22 @@ export async function PUT(
       oldFilesToDelete.push(existing.coverImage)
     }
 
+    // Handle machine associations (junction table)
+    if (Array.isArray(body.machines)) {
+      // Delete existing junction entries
+      await db.machineProductionLine.deleteMany({ where: { productionLineId: existing.id } })
+      // Create new junction entries with order
+      if (body.machines.length > 0) {
+        await db.machineProductionLine.createMany({
+          data: body.machines.map((m: { machineId: string; order: number }, idx: number) => ({
+            machineId: m.machineId,
+            productionLineId: existing.id,
+            order: m.order ?? idx,
+          })),
+        })
+      }
+    }
+
     const productionLine = await db.productionLine.update({
       where: { slug },
       data: {
@@ -84,9 +101,18 @@ export async function PUT(
         ...(body.shortDesc !== undefined && { shortDesc: body.shortDesc ?? null }),
         ...(body.images !== undefined && { images: body.images }),
         ...(body.coverImage !== undefined && { coverImage: body.coverImage ?? null }),
+        ...(body.specs !== undefined && { specs: body.specs ?? null }),
+        ...(body.basePrice !== undefined && { basePrice: body.basePrice ?? null }),
+        ...(body.currency !== undefined && { currency: body.currency }),
         ...(body.featured !== undefined && { featured: body.featured }),
         ...(body.status !== undefined && { status: body.status }),
         ...(body.order !== undefined && { order: body.order }),
+      },
+      include: {
+        machines: {
+          include: { machine: { include: { category: true } } },
+          orderBy: { order: 'asc' },
+        },
       },
     })
 
