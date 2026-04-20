@@ -742,3 +742,43 @@ Stage Summary:
 - The modal-based approach has been fully replaced with page navigation
 - All trilingual support (EN/FR/AR) maintained throughout
 - Lint passes cleanly, dev server compiles successfully
+---
+Task ID: 1
+Agent: Main Agent
+Task: Create and integrate backup system with chunked restore and reset functionality
+
+Work Log:
+- Installed `archiver` and `adm-zip` packages for ZIP creation/extraction
+- Created `src/lib/backup.ts` - Core backup/restore/reset utility library:
+  - `generateBackup()` - Exports all 13 DB tables as JSON + all uploaded files into a streaming ZIP archive
+  - `saveChunk()` / `assembleAndRestore()` - Chunked file upload (5MB chunks) with assembly and phased restore
+  - `restoreDatabase()` - Restores DB tables in proper order (respecting foreign keys), deletes existing data then inserts from backup in batches of 50
+  - `restoreFiles()` - Restores uploaded files in batches of 20 from extracted ZIP
+  - `resetApp()` - Deletes ALL data from all tables except AdminUser, deletes all uploaded files, recreates empty upload subdirectories
+  - In-memory progress tracker for restore status polling
+- Created API routes:
+  - `GET /api/backup` - Generate and stream backup ZIP download (admin auth)
+  - `POST /api/backup` - Get backup info (table counts, file stats) (admin auth)
+  - `POST /api/backup/upload-chunk` - Upload a single chunk with progress tracking (admin auth)
+  - `DELETE /api/backup/upload-chunk` - Cancel chunk upload (admin auth)
+  - `POST /api/backup/restore` - Trigger restore after all chunks uploaded (admin auth)
+  - `GET /api/backup/status` - Poll restore progress (admin auth)
+  - `DELETE /api/backup/status` - Reset restore status and cleanup temp files (admin auth)
+  - `POST /api/backup/reset` - Reset app to initial state (admin auth)
+- Created `AdminBackupPage.tsx` - Full admin UI with:
+  - Overview stats (total DB records, uploaded files count/size, tables breakdown with badges)
+  - Create Backup section with download button
+  - Restore from Backup section with drag-to-select file, chunked upload, real-time progress bar (upload → extract → restore DB → restore files), and cancel support
+  - Danger Zone with Reset App button, AlertDialog confirmation showing exactly what will be deleted and what will be preserved
+- Created route page at `/eurl/lasource/backup/` with AdminAuthGuard
+- Added "Backup & Restore" entry to AdminSidebar with HardDrive icon (between Leads and Settings)
+- Audited all public and admin pages for empty data safety after reset - all pages have proper null checks, empty state UI, and fallback values
+
+Stage Summary:
+- Complete backup system with 3 features: Create Backup, Restore (chunked), and Reset
+- Backup files are standard ZIP archives containing database JSON exports and all uploaded files
+- Restore processes large files in 5MB chunks to avoid server overload
+- Database restore respects foreign key order (delete children first, insert parents first)
+- Reset preserves admin credentials while deleting all other data and files
+- All 6 key page components audited and confirmed safe with empty data
+- Lint passes cleanly, no errors

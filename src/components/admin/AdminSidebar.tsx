@@ -14,6 +14,7 @@ import {
   Handshake,
   Image,
   MessageSquare,
+  HardDrive,
   Settings,
   ArrowLeft,
   LogOut,
@@ -52,6 +53,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'partners', label: 'Partners', icon: Handshake, href: '/eurl/lasource/partners' },
   { id: 'gallery', label: 'Gallery', icon: Image, href: '/eurl/lasource/gallery' },
   { id: 'leads', label: 'Leads', icon: MessageSquare, href: '/eurl/lasource/leads' },
+  { id: 'backup', label: 'Backup & Restore', icon: HardDrive, href: '/eurl/lasource/backup' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/eurl/lasource/settings' },
 ];
 
