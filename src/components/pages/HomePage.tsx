@@ -139,10 +139,10 @@ export function HomePage() {
     cat ? getLocalizedValue(cat.name, locale) : '';
 
   const stats = [
-    { value: site.stats.years, label: t.stats.yearsExperience },
-    { value: site.stats.machines, label: t.stats.machinesSold },
-    { value: site.stats.clients, label: t.stats.clients },
-    { value: site.stats.countries, label: t.stats.countries },
+    { value: site.stats.years, suffix: '+', label: t.stats.yearsExperience },
+    { value: site.stats.machines, suffix: '+', label: t.stats.machinesSold },
+    { value: site.stats.clients, suffix: '+', label: t.stats.clients },
+    { value: site.stats.countries, suffix: '+', label: t.stats.countries },
   ];
 
   return (

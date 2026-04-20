@@ -176,8 +176,8 @@ export async function generateBackup(): Promise<NodeJS.ReadableStream> {
   try {
     // 1. Export all database tables as JSON
     for (const tableDef of TABLES_TO_BACKUP) {
-      // @ts-expect-error - dynamic model access
-      const records = await db[tableDef.model].findMany();
+      // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const records = await (db as any)[tableDef.model].findMany();
       const cleanData = records.map((r: Record<string, unknown>) => {
         const clean: Record<string, unknown> = {};
         for (const [key, val] of Object.entries(r)) {
@@ -374,8 +374,8 @@ async function restoreDatabase(extractDir: string, meta: BackupMeta | null): Pro
   // 1. Delete all data in proper order (respecting foreign keys)
   for (const model of DELETE_ORDER) {
     try {
-      // @ts-expect-error - dynamic model access
-      await db[model].deleteMany({});
+      // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (db as any)[model].deleteMany({});
     } catch (error) {
       console.warn(`Failed to clear ${model}:`, error);
     }
@@ -426,8 +426,8 @@ async function restoreDatabase(extractDir: string, meta: BackupMeta | null): Pro
       const BATCH_SIZE = 50;
       for (let i = 0; i < processed.length; i += BATCH_SIZE) {
         const batch = processed.slice(i, i + BATCH_SIZE);
-        // @ts-expect-error - dynamic model access
-        await db[model].createMany({
+        // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (db as any)[model].createMany({
           data: batch as Prisma.Enumerable<Prisma.Args<any, 'createMany'>['data']>,
           skipDuplicates: true,
         });
@@ -553,8 +553,8 @@ export async function resetApp(): Promise<{ deletedRecords: Record<string, numbe
   // 1. Delete all data from all tables except AdminUser
   for (const model of DELETE_ORDER) {
     try {
-      // @ts-expect-error - dynamic model access
-      const result = await db[model].deleteMany({});
+      // // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (db as any)[model].deleteMany({});
       deletedRecords[model] = result.count;
     } catch (error) {
       console.warn(`Failed to clear ${model} during reset:`, error);
