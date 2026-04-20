@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trash2, Loader2, Eye, Mail, Phone, Building } from 'lucide-react';
+import { Trash2, Loader2, Eye, Mail, Phone, Building, Wrench, PackageSearch, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +54,9 @@ interface LeadItem {
   notes: string | null;
   createdAt: string;
   machine: { id: string; name: string; slug: string } | null;
+  serviceId: string | null;
+  customMachines: string | null;
+  selectedMachineIds: string | null;
 }
 
 const STATUS_OPTIONS = ['new', 'contacted', 'qualified', 'closed'] as const;
@@ -208,8 +211,17 @@ export function AdminLeadsPage() {
                           </span>
                         ) : '-'}
                       </TableCell>
-                      <TableCell className="max-w-[150px] truncate">
-                        {lead.subject || lead.message.slice(0, 40) + '...'}
+                      <TableCell className="max-w-[200px]">
+                        <div className="flex items-center gap-1.5">
+                          {lead.serviceId && (
+                            <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0 bg-primary/5 border-primary/20 text-primary">
+                              <Wrench className="h-2.5 w-2.5 mr-0.5" /> Service
+                            </Badge>
+                          )}
+                          <span className="truncate text-sm">
+                            {lead.subject || lead.message.slice(0, 40) + '...'}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm">
                         {new Date(lead.createdAt).toLocaleDateString()}
@@ -296,6 +308,53 @@ export function AdminLeadsPage() {
                   <p className="text-sm text-muted-foreground">Subject</p>
                   <p className="font-medium">{selectedLead.subject}</p>
                 </div>
+              )}
+
+              {/* Service Request Info */}
+              {(selectedLead.serviceId || selectedLead.customMachines || selectedLead.selectedMachineIds) && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold flex items-center gap-1.5">
+                      <Wrench className="h-3.5 w-3.5" /> Service Request Details
+                    </p>
+
+                    {selectedLead.selectedMachineIds && (
+                      <div className="rounded-md bg-muted/50 border p-3">
+                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mb-1">
+                          <Tag className="h-3 w-3" /> Machines from Catalog
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(() => {
+                            try {
+                              const ids = JSON.parse(selectedLead.selectedMachineIds);
+                              return ids.map((id: string, i: number) => (
+                                <Badge key={i} variant="outline" className="text-xs">ID: {id.slice(0, 8)}</Badge>
+                              ));
+                            } catch {
+                              return <span className="text-xs text-muted-foreground">{selectedLead.selectedMachineIds}</span>;
+                            }
+                          })()}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedLead.customMachines && (
+                      <div className="rounded-md bg-muted/50 border p-3">
+                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mb-1">
+                          <PackageSearch className="h-3 w-3" /> Custom Machines (Not Listed)
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {selectedLead.customMachines.split(',').map((machine, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                              {machine.trim()}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               <Separator />

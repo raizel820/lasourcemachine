@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Loader2, Check, Wrench } from 'lucide-react';
+import { Loader2, Check, Wrench, Plus, X, PackageSearch } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { useAppStore } from '@/lib/store';
 import { getTranslations } from '@/lib/i18n';
 import { getLocalizedValue } from '@/lib/helpers';
@@ -56,6 +57,8 @@ export function ServiceRequestModal({
     company: '',
     serviceId: '',
     selectedMachines: [] as string[],
+    customMachines: [] as string[],
+    customMachineInput: '',
     note: '',
   });
 
@@ -96,6 +99,8 @@ export function ServiceRequestModal({
         company: '',
         serviceId: '',
         selectedMachines: [],
+        customMachines: [],
+        customMachineInput: '',
         note: '',
       });
     }
@@ -117,6 +122,43 @@ export function ServiceRequestModal({
     }));
   };
 
+  const addCustomMachine = () => {
+    const trimmed = formData.customMachineInput.trim();
+    if (!trimmed) return;
+    // Prevent duplicates
+    if (formData.customMachines.some(
+      (m) => m.toLowerCase() === trimmed.toLowerCase()
+    )) {
+      toast.error(
+        locale === 'ar'
+          ? 'هذه الآلة مضافة بالفعل'
+          : locale === 'fr'
+            ? 'Cette machine est déjà ajoutée'
+            : 'This machine is already added'
+      );
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      customMachines: [...prev.customMachines, trimmed],
+      customMachineInput: '',
+    }));
+  };
+
+  const removeCustomMachine = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      customMachines: prev.customMachines.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleCustomMachineKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addCustomMachine();
+    }
+  };
+
   const getSelectedMachineNames = () => {
     return machines
       .filter((m) => formData.selectedMachines.includes(m.id))
@@ -128,6 +170,8 @@ export function ServiceRequestModal({
     const svc = services.find((s) => s.id === formData.serviceId);
     return svc ? getLocalizedValue(svc.title || svc.name, locale) : '';
   };
+
+  const hasAnyMachines = formData.selectedMachines.length > 0 || formData.customMachines.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,8 +195,13 @@ export function ServiceRequestModal({
 
       // Build a comprehensive message
       const parts: string[] = [];
-      if (machineNames) parts.push(`Machines: ${machineNames}`);
-      if (formData.note) parts.push(`Note: ${formData.note}`);
+      if (formData.selectedMachines.length > 0) {
+        parts.push(`${t.services.selectedFromList}: ${machineNames}`);
+      }
+      if (formData.customMachines.length > 0) {
+        parts.push(`${t.services.customAdded}: ${formData.customMachines.join(', ')}`);
+      }
+      if (formData.note) parts.push(`${t.services.note}: ${formData.note}`);
 
       const response = await fetch('/api/contact', {
         method: 'POST',
@@ -164,6 +213,14 @@ export function ServiceRequestModal({
           company: formData.company || undefined,
           subject: `${t.services.serviceRequestSubject}: ${serviceName}`,
           message: parts.length > 0 ? parts.join('\n\n') : `Service request for: ${serviceName}`,
+          serviceId: formData.serviceId || undefined,
+          selectedMachineIds: formData.selectedMachines.length > 0
+            ? JSON.stringify(formData.selectedMachines)
+            : undefined,
+          customMachines: formData.customMachines.length > 0
+            ? formData.customMachines.join(', ')
+            : undefined,
+          machineInterest: machineNames || undefined,
         }),
       });
 
@@ -188,7 +245,7 @@ export function ServiceRequestModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-hidden flex flex-col p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -291,15 +348,24 @@ export function ServiceRequestModal({
               </Select>
             </div>
 
-            {/* Machine Selection */}
-            <div className="space-y-2">
-              <Label>{t.services.interestedMachines}</Label>
+            <Separator />
+
+            {/* Machines Section Header */}
+            <div className="space-y-1">
+              <Label className="text-base font-semibold">{t.services.interestedMachines}</Label>
               <p className="text-xs text-muted-foreground">
                 {locale === 'ar'
                   ? '(اختياري - اختر الآلات المرتبطة بطلب الخدمة)'
                   : locale === 'fr'
                     ? '(Optionnel - Sélectionnez les machines liées à la demande de service)'
                     : '(Optional — select machines related to this service request)'}
+              </p>
+            </div>
+
+            {/* Machines from website catalog */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {t.services.selectedFromList}
               </p>
               {dataLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
@@ -311,15 +377,15 @@ export function ServiceRequestModal({
                   {locale === 'ar' ? 'لا توجد آلات متاحة' : locale === 'fr' ? 'Aucune machine disponible' : 'No machines available'}
                 </p>
               ) : (
-                <div className="rounded-lg border bg-muted/30 p-3 max-h-48 overflow-y-auto">
-                  <div className="space-y-2">
+                <div className="rounded-lg border bg-muted/30 p-3 max-h-44 overflow-y-auto">
+                  <div className="space-y-1">
                     {machines.map((machine) => {
                       const machineName = getLocalizedValue(machine.name, locale);
                       const isSelected = formData.selectedMachines.includes(machine.id);
                       return (
                         <label
                           key={machine.id}
-                          className={`flex items-center gap-3 rounded-md px-3 py-2 cursor-pointer transition-colors ${
+                          className={`flex items-center gap-3 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${
                             isSelected
                               ? 'bg-primary/5 border border-primary/20'
                               : 'hover:bg-muted'
@@ -355,6 +421,89 @@ export function ServiceRequestModal({
                 </div>
               )}
             </div>
+
+            {/* Custom Machines (not listed on website) */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {t.services.customAdded}
+              </p>
+              <div className="rounded-lg border border-dashed bg-muted/20 p-3 space-y-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <PackageSearch className="h-3.5 w-3.5 shrink-0" />
+                  <span>{t.services.customMachinesHint}</span>
+                </div>
+
+                {/* Input to add custom machine */}
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.customMachineInput}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, customMachineInput: e.target.value }))
+                    }
+                    onKeyDown={handleCustomMachineKeyDown}
+                    placeholder={t.services.customMachinesPlaceholder}
+                    disabled={isSubmitting}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomMachine}
+                    disabled={isSubmitting || !formData.customMachineInput.trim()}
+                    className="shrink-0 cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4 rtl:mr-0 rtl:ml-1 rtl:rotate-180 mr-1" />
+                    {t.services.addMachine}
+                  </Button>
+                </div>
+
+                {/* List of added custom machines */}
+                {formData.customMachines.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {formData.customMachines.map((machine, i) => (
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className="flex items-center gap-1 py-1 px-2.5 text-xs"
+                      >
+                        <span>{machine}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomMachine(i)}
+                          disabled={isSubmitting}
+                          className="hover:text-destructive transition-colors cursor-pointer"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Summary when machines are selected */}
+            {hasAnyMachines && (
+              <div className="rounded-lg bg-primary/5 border border-primary/15 p-3">
+                <p className="text-xs font-medium text-primary mb-1">
+                  {locale === 'ar' ? 'ملخص الآلات' : locale === 'fr' ? 'Résumé des machines' : 'Machine Summary'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {formData.selectedMachines.length > 0 && (
+                    <span>
+                      {formData.selectedMachines.length} {locale === 'ar' ? 'من الكتالوج' : locale === 'fr' ? 'du catalogue' : 'from catalog'}
+                      {formData.customMachines.length > 0 && ' + '}
+                    </span>
+                  )}
+                  {formData.customMachines.length > 0 && (
+                    <span>
+                      {formData.customMachines.length} {locale === 'ar' ? 'مخصصة' : locale === 'fr' ? 'personnalisée(s)' : 'custom'}
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
 
             {/* Note */}
             <div className="space-y-1.5">

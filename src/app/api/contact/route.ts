@@ -5,7 +5,19 @@ import { db } from '@/lib/db'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, email, phone, company, message, subject, machineInterest, machineId } = body
+    const {
+      name,
+      email,
+      phone,
+      company,
+      message,
+      subject,
+      machineInterest,
+      machineId,
+      serviceId,
+      customMachines,
+      selectedMachineIds,
+    } = body
 
     if (!name || !message) {
       return NextResponse.json({ error: 'name and message are required' }, { status: 400 })
@@ -21,6 +33,9 @@ export async function POST(req: NextRequest) {
         subject: subject || null,
         machineInterest: machineInterest || null,
         machineId: machineId || null,
+        serviceId: serviceId || null,
+        customMachines: customMachines || null,
+        selectedMachineIds: selectedMachineIds || null,
       },
     })
 
